@@ -30,7 +30,7 @@ export async function migrate(repo: string, opts: { agent?: string; limit?: numb
       done.push({ finding: f.id, result: `skipped: earlier ${blocking.kind}` });
       continue;
     }
-    if (opts.dryRun) { done.push({ finding: f.id, result: 'claimed (dry run)' }); continue; }
+    if (opts.dryRun) { await setStatus(repo, f.id, 'open'); done.push({ finding: f.id, result: 'claimed and released (dry run)' }); continue; }
     const edit = await plannedEdit(repo, f.id);
     if (!hasLlm()) {
       // deterministic path: PR when the edit is known, otherwise an issue for the batch
@@ -45,7 +45,7 @@ export async function migrate(repo: string, opts: { agent?: string; limit?: numb
       continue;
     }
     const run = await runAgent({
-      repo, ctx, system: SYSTEM,
+      repo, ctx, system: SYSTEM, fixed: { finding_id: f.id },
       task: `Finding ${f.id}\nChange: ${f.change.summary} (${f.change.source_url})\nCall site: ${f.callsite.file}:${f.callsite.line} \`${f.callsite.snippet}\`\nRoutes: ${f.routes.join(', ')}\nKnown edit: ${edit ? `${edit.from} -> ${edit.to} from ${edit.source}` : 'none'}`,
       tools: ['recall', 'explain_path', 'sdk_params', 'save_recipe', 'publish_recipe', 'open_pr', 'open_issue', 'migration_batches', 'record_decision'],
     });

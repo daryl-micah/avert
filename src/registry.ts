@@ -99,7 +99,7 @@ export async function callTool(name: string, raw: Record<string, unknown>, ctx: 
   const repo = repoOf(args.repo as string | undefined);
   const result = await t.run({ ...args, repo }, ctx);
   if (opts.log !== false) {
-    const touched = new Set<string>([args.finding_id, result?.finding?.id, result?.finding_id, ...(result?.findings ?? []).slice(0, 20).map((f: any) => f?.id ?? f)].filter((x): x is string => typeof x === 'string'));
+    const touched = new Set<string>([args.finding_id, result?.finding?.id, result?.finding_id, ...(Array.isArray(result?.findings) ? result.findings : []).slice(0, 20).map((f: any) => f?.id ?? f)].filter((x): x is string => typeof x === 'string'));
     await T.logSession({ repo, session_id: ctx.sessionId, agent: ctx.agent, client: ctx.agent, findings: [...touched] }).catch(() => {});
   }
   return result;

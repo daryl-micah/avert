@@ -9,7 +9,7 @@ const SYSTEM = `You are Avert's watcher agent. Provider API changes were just in
 Use the tools to: rank the findings, group them into migration batches, and check memory (recall) for earlier decisions.
 Then write a short triage for the team: the most urgent finding with its evidence path (file:line -> route -> owner team),
 how many batches exist, and anything earlier sessions already decided. Record one 'note' decision on the most urgent finding
-explaining why it is first. Do not claim findings or open issues; the migrator agents do that. Be concise and factual; only state what the tools returned.`;
+explaining why it is first. Do not claim findings or open issues; the migrator agents do that. Copy finding ids exactly as the tools return them. Be concise and factual; only state what the tools returned.`;
 
 export async function watch(repo: string, opts: { agent?: string } = {}) {
   const ctx = { agent: opts.agent ?? 'watcher', sessionId: `session:watcher:${Date.now().toString(36)}` };

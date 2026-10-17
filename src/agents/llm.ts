@@ -19,13 +19,26 @@ function compact(result: unknown): string {
   return json.length > 8000 ? json.slice(0, 8000) + '…(truncated)' : json;
 }
 
+type JsonSchema = { properties?: Record<string, { type?: string | string[]; enum?: unknown[] }>; required?: string[] } & Record<string, unknown>;
+
+/** Models often send null for optional args and Groq validates tool calls strictly, so accept null on every optional property. */
+function nullableOptionals(schema: JsonSchema, hide: string[] = []): JsonSchema {
+  for (const k of hide) { delete schema.properties?.[k]; schema.required &&= schema.required.filter((r) => r !== k); }
+  for (const [k, p] of Object.entries(schema.properties ?? {})) {
+    if (schema.required?.includes(k) || typeof p.type !== 'string') continue;
+    p.type = [p.type, 'null'];
+    p.enum &&= [...p.enum, null];
+  }
+  return schema;
+}
+
 export interface AgentRun { text: string; calls: { tool: string; args: unknown; ok: boolean }[] }
 
-export async function runAgent(opts: { repo: string; system: string; task: string; tools: string[]; ctx: Ctx; maxSteps?: number; log?: (s: string) => void }): Promise<AgentRun> {
+export async function runAgent(opts: { repo: string; system: string; task: string; tools: string[]; fixed?: Record<string, string>; ctx: Ctx; maxSteps?: number; log?: (s: string) => void }): Promise<AgentRun> {
   const log = opts.log ?? ((s) => console.log(s));
   const defs = TOOLS.filter((t) => opts.tools.includes(t.name)).map((t) => ({
     type: 'function' as const,
-    function: { name: t.name, description: t.description, parameters: z.toJSONSchema(z.object(t.shape)) as Record<string, unknown> },
+    function: { name: t.name, description: t.description, parameters: nullableOptionals(z.toJSONSchema(z.object(t.shape)) as JsonSchema, Object.keys(opts.fixed ?? {})) },
   }));
   const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [{ role: 'system', content: opts.system }, { role: 'user', content: opts.task }];
   const calls: AgentRun['calls'] = [];
@@ -40,9 +53,9 @@ export async function runAgent(opts: { repo: string; system: string; task: strin
       let ok = true;
       let args: Record<string, unknown> = {};
       try {
-        args = JSON.parse(tc.function.arguments || '{}');
+        args = Object.fromEntries(Object.entries(JSON.parse(tc.function.arguments || '{}')).filter(([, v]) => v !== null));
         log(`  → ${tc.function.name}(${JSON.stringify(args)})`);
-        content = compact(await callTool(tc.function.name, { ...args, repo: opts.repo }, opts.ctx));
+        content = compact(await callTool(tc.function.name, { ...args, ...opts.fixed, repo: opts.repo }, opts.ctx));
       } catch (e) {
         ok = false;
         content = `Error: ${(e as Error).message}`;

@@ -69,10 +69,11 @@ export async function plannedEdit(repo: string, findingId: string): Promise<(Edi
   const [r] = await run(g, `
     MATCH (f:Finding {id: $id})-[:CAUSED_BY]->(c:ChangeEvent)-[:AFFECTS]->(t)
     OPTIONAL MATCH (c)-[:REPLACEMENT]->(rep)
-    RETURN t, rep`, { id: findingId });
+    OPTIONAL MATCH (f)-[:AT]->(:CallSite)-[:PASSES]->(alias:Value)-[:RESOLVES_TO]->(t)
+    RETURN t, rep, alias`, { id: findingId });
   if (r?.rep) {
     const t = r.t.properties, rep = r.rep.properties;
-    if (r.t.labels[0] === 'Value') return { kind: 'value', from: t.value, to: rep.value, source: 'replacement' };
+    if (r.t.labels[0] === 'Value') return { kind: 'value', from: r.alias?.properties.value ?? t.value, to: rep.value, source: 'replacement' }; // the call site may pass an alias that resolves to the retired value
     if (r.t.labels[0] === 'Param') return { kind: 'param', from: t.name, to: rep.name, source: 'replacement' };
   }
   const { recipes } = await recall({ repo, finding_id: findingId });
