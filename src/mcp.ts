@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { graphName, listRepoGraphs } from './db.js';
 import { callTool, repoArg, TOOLS } from './registry.js';
 
 // Avert's MCP server: the named domain tools from the registry. Each client connection is one
@@ -19,6 +20,7 @@ export function buildServer(opts: { readOnly?: boolean } = {}): McpServer {
     if (t.write && opts.readOnly) continue;
     server.registerTool(t.name, { description: t.description, inputSchema: { repo: repoArg, ...t.shape } }, (async (args: Record<string, unknown>) => {
       try {
+        if (opts.readOnly) await assertKnownRepo(args.repo);
         const result = await callTool(t.name, args, ctx(), { log: !opts.readOnly });
         return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }], structuredContent: result };
       } catch (e) {
@@ -27,4 +29,10 @@ export function buildServer(opts: { readOnly?: boolean } = {}): McpServer {
     }) as any);
   }
   return server;
+}
+
+/** Read-only (hosted) mode serves only graphs that already exist, never an arbitrary path or URL. */
+async function assertKnownRepo(repo: unknown): Promise<void> {
+  const known = await listRepoGraphs();
+  if (typeof repo !== 'string' || !known.includes(graphName(repo))) throw new Error(`Pass repo as one of: ${known.join(', ')}`);
 }

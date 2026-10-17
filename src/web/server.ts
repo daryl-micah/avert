@@ -1,10 +1,12 @@
 import { readFile } from 'node:fs/promises';
 import { serve } from '@hono/node-server';
+import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js';
 import { Hono } from 'hono';
 import { listRepoGraphs } from '../db.js';
+import { buildServer } from '../mcp.js';
 import { explainPath, listFindings } from '../tools.js';
 
-// Hosted demo: a read-only view of the graphs. No writes, no LLM calls, no GitHub actions.
+// Hosted demo: a read-only view of the graphs (page, JSON API and MCP). No writes, no LLM calls, no GitHub actions.
 // Only graphs that exist are served, so the repo parameter cannot reach anything else.
 
 export function buildApp(): Hono {
@@ -25,6 +27,13 @@ export function buildApp(): Hono {
     const id = c.req.query('finding');
     if (!repo || !id) return c.json({ error: 'unknown repo or finding' }, 404);
     try { return c.json(await explainPath({ repo, finding_id: id })); } catch { return c.json({ error: 'unknown finding' }, 404); }
+  });
+
+  // Read-only MCP over streamable HTTP, stateless: a fresh server per request, so nothing is held between calls.
+  app.all('/mcp', async (c) => {
+    const transport = new WebStandardStreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
+    await buildServer({ readOnly: true }).connect(transport);
+    return transport.handleRequest(c.req.raw);
   });
   return app;
 }
