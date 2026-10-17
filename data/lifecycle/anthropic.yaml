@@ -1,0 +1,34 @@
+# Hand-curated from Anthropic's public model deprecations page. One row per dated model id.
+# A model past its retirement date becomes a `retired` change; before it, `deprecated` with effective_date.
+provider: anthropic
+param: model
+source_url: https://platform.claude.com/docs/en/about-claude/model-deprecations
+retrieved: 2026-10-16
+models:
+  - { id: claude-sonnet-4-5-20250929, announced: 2026-09-30, retires: 2026-11-30, replacement: claude-sonnet-5-5 }
+  - { id: claude-opus-4-1-20250805,   announced: 2026-06-05, retires: 2026-08-05, replacement: claude-opus-4-8 }
+  - { id: claude-sonnet-4-20250514,   announced: 2026-04-14, retires: 2026-06-15, replacement: claude-sonnet-5-5 }
+  - { id: claude-opus-4-20250514,     announced: 2026-04-14, retires: 2026-06-15, replacement: claude-opus-4-8 }
+  - { id: claude-3-haiku-20240307,    announced: 2026-02-19, retires: 2026-04-20, replacement: claude-haiku-4-5-20251001 }
+  - { id: claude-3-5-haiku-20241022,  announced: 2025-12-19, retires: 2026-02-19, replacement: claude-haiku-4-5-20251001 }
+  - { id: claude-3-7-sonnet-20250219, announced: 2025-10-28, retires: 2026-02-19, replacement: claude-sonnet-5-5 }
+  - { id: claude-3-5-sonnet-20240620, announced: 2025-08-13, retires: 2025-10-28, replacement: claude-sonnet-5-5 }
+  - { id: claude-3-5-sonnet-20241022, announced: 2025-08-13, retires: 2025-10-28, replacement: claude-sonnet-5-5 }
+  - { id: claude-3-opus-20240229,     announced: 2025-06-30, retires: 2026-01-05, replacement: claude-opus-4-8 }
+  - { id: claude-3-sonnet-20240229,   announced: 2025-01-21, retires: 2025-07-21, replacement: claude-sonnet-5-5 }
+  - { id: claude-2.1,                 announced: 2025-01-21, retires: 2025-07-21, replacement: claude-opus-4-8 }
+  - { id: claude-2.0,                 announced: 2025-01-21, retires: 2025-07-21, replacement: claude-opus-4-8 }
+# Rolling aliases: an unpinned id that resolved to a dated model. Calls through the alias break when the target retires.
+aliases:
+  - alias: claude-3-5-sonnet-latest
+    resolves_to: claude-3-5-sonnet-20241022
+    source_url: https://docs.anthropic.com/en/docs/about-claude/models
+    note: Alias documented on Anthropic's models overview while Claude Sonnet 3.5 was active.
+  - alias: claude-3-5-haiku-latest
+    resolves_to: claude-3-5-haiku-20241022
+    source_url: https://docs.anthropic.com/en/docs/about-claude/models
+    note: Alias documented on Anthropic's models overview while Claude Haiku 3.5 was active.
+  - alias: claude-3-7-sonnet-latest
+    resolves_to: claude-3-7-sonnet-20250219
+    source_url: https://docs.anthropic.com/en/docs/about-claude/models
+    note: Alias documented on Anthropic's models overview while Claude Sonnet 3.7 was active.

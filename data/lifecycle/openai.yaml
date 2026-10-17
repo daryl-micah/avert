@@ -1,0 +1,14 @@
+# Hand-curated from OpenAI's public API deprecations page.
+provider: openai
+param: model
+source_url: https://developers.openai.com/api/docs/deprecations
+retrieved: 2026-10-16
+models:
+  - { id: gpt-4o-2024-08-06,  announced: 2026-10-14, retires: 2027-01-14, replacement: gpt-6-luna }
+  - { id: gpt-4o-2024-05-13,  announced: 2026-04-22, retires: 2026-10-23, replacement: gpt-5.6-sol }
+  - { id: gpt-4-turbo,        announced: 2026-04-22, retires: 2026-10-23, replacement: gpt-5.6-sol }
+  - { id: gpt-4-0613,         announced: 2026-04-22, retires: 2026-10-23, replacement: gpt-5.6-sol }
+  - { id: gpt-3.5-turbo,      announced: 2026-04-22, retires: 2026-10-23, replacement: gpt-5.6-terra }
+  - { id: chatgpt-4o-latest,  announced: 2025-11-18, retires: 2026-02-17, replacement: gpt-5.1-chat-latest }
+  - { id: gpt-4-32k,          announced: 2024-06-06, retires: 2025-06-06, replacement: gpt-4o }
+aliases: []

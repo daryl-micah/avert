@@ -1,0 +1,59 @@
+# Launch providers. Adding a provider = adding an entry here (see docs: Contributing > Add a provider).
+#
+# npm / pypi        package names; their releases are diffed for surface changes.
+# ts.imports        module specifier -> how a client is created from it:
+#                     "new"  : `new X(...)` where X is the default or a named import listed in `ctors`
+#                     "call" : `x(...)` (factory function)
+# py.imports        python module -> constructor names. `module_client: true` means the module itself
+#                     behaves as a client (e.g. `openai.chat.completions.create`, `stripe.PaymentIntent.create`).
+# sdk.ts / sdk.py   root client class used by the SDK differ to walk the public surface.
+
+openai:
+  name: OpenAI
+  npm: openai
+  pypi: openai
+  ts:
+    imports: { openai: { ctors: [OpenAI, AzureOpenAI, default] } }
+  py:
+    imports: { openai: { ctors: [OpenAI, AsyncOpenAI, AzureOpenAI, AsyncAzureOpenAI], module_client: true } }
+  sdk: { ts: OpenAI, py: OpenAI }
+
+anthropic:
+  name: Anthropic
+  npm: "@anthropic-ai/sdk"
+  pypi: anthropic
+  ts:
+    imports: { "@anthropic-ai/sdk": { ctors: [Anthropic, default] } }
+  py:
+    imports: { anthropic: { ctors: [Anthropic, AsyncAnthropic, AnthropicBedrock, AnthropicVertex] } }
+  sdk: { ts: Anthropic, py: Anthropic }
+
+stripe:
+  name: Stripe
+  npm: stripe
+  pypi: stripe
+  ts:
+    imports: { stripe: { ctors: [Stripe, default], call: true } }
+  py:
+    imports: { stripe: { ctors: [StripeClient], module_client: true } }
+  sdk: { ts: Stripe, py: StripeClient }
+
+gemini:
+  name: Google Gemini
+  npm: "@google/genai"
+  pypi: google-genai
+  ts:
+    imports: { "@google/genai": { ctors: [GoogleGenAI] } }
+  py:
+    imports: { google.genai: { ctors: [Client] } }
+  sdk: { ts: GoogleGenAI, py: Client }
+
+twilio:
+  name: Twilio
+  npm: twilio
+  pypi: twilio
+  ts:
+    imports: { twilio: { ctors: [Twilio, default], call: true } }
+  py:
+    imports: { twilio.rest: { ctors: [Client] } }
+  sdk: { ts: Twilio, py: Client }

@@ -1,0 +1,23 @@
+# Hand-curated from Google's public Gemini API deprecations page. Rows without a stated replacement have none.
+provider: gemini
+param: model
+source_url: https://ai.google.dev/gemini-api/docs/deprecations
+retrieved: 2026-10-16
+models:
+  - { id: gemini-3.1-flash-tts-preview,                   retires: 2026-11-17, replacement: gemini-3.8-flash-tts }
+  - { id: gemini-3.1-flash-live-preview,                  retires: 2026-11-17 }
+  - { id: gemini-2.5-flash-native-audio-preview-12-2025,  retires: 2026-11-17 }
+  - { id: gemini-2.5-pro-preview-tts,                     retires: 2026-11-17 }
+  - { id: veo-3.1-lite-generate-preview,                  retires: 2026-10-22 }
+  - { id: veo-3.1-fast-generate-preview,                  retires: 2026-10-22 }
+  - { id: gemini-omni-flash-preview,                      retires: 2026-10-22 }
+  - { id: gemini-2.5-computer-use-preview-10-2025,        retires: 2026-07-28 }
+  - { id: gemini-3-pro-image-preview,                     retires: 2026-06-25, replacement: gemini-3-pro-image }
+  - { id: gemini-3.1-flash-image-preview,                 retires: 2026-06-25 }
+  - { id: gemini-3.1-flash-lite-preview,                  retires: 2026-05-25 }
+  - { id: gemini-3-pro-preview,                           retires: 2026-03-09 }
+  - { id: text-embedding-004,                             retires: 2026-01-14, replacement: gemini-embedding-2 }
+  - { id: gemini-2.0-flash-live-001,                      retires: 2025-12-09 }
+  - { id: embedding-001,                                  retires: 2025-10-30, replacement: gemini-embedding-2 }
+  - { id: gemini-embedding-001,                           retires: 2028-05-14, replacement: gemini-embedding-2 }
+aliases: []
