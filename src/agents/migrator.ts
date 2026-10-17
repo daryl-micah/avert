@@ -44,11 +44,17 @@ export async function migrate(repo: string, opts: { agent?: string; limit?: numb
       }
       continue;
     }
-    const run = await runAgent({
-      repo, ctx, system: SYSTEM, fixed: { finding_id: f.id },
-      task: `Finding ${f.id}\nChange: ${f.change.summary} (${f.change.source_url})\nCall site: ${f.callsite.file}:${f.callsite.line} \`${f.callsite.snippet}\`\nRoutes: ${f.routes.join(', ')}\nKnown edit: ${edit ? `${edit.from} -> ${edit.to} from ${edit.source}` : 'none'}`,
-      tools: ['recall', 'explain_path', 'sdk_params', 'save_recipe', 'publish_recipe', 'open_pr', 'open_issue', 'migration_batches', 'record_decision'],
-    });
+    let run: Awaited<ReturnType<typeof runAgent>>;
+    try {
+      run = await runAgent({
+        repo, ctx, system: SYSTEM, fixed: { finding_id: f.id },
+        task: `Finding ${f.id}\nChange: ${f.change.summary} (${f.change.source_url})\nCall site: ${f.callsite.file}:${f.callsite.line} \`${f.callsite.snippet}\`\nRoutes: ${f.routes.join(', ')}\nKnown edit: ${edit ? `${edit.from} -> ${edit.to} from ${edit.source}` : 'none'}`,
+        tools: ['recall', 'explain_path', 'sdk_params', 'save_recipe', 'publish_recipe', 'open_pr', 'open_issue', 'migration_batches', 'record_decision'],
+      });
+    } catch (e) {
+      await setStatus(repo, f.id, 'open'); // release the claim before surfacing the failure (e.g. a rate limit)
+      throw e;
+    }
     if (!run.calls.some((c) => (c.tool === 'open_pr' || c.tool === 'open_issue') && c.ok)) await setStatus(repo, f.id, 'open'); // release for another agent
     console.log(`  ${run.text}`);
     done.push({ finding: f.id, result: run.text });
