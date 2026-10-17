@@ -1,7 +1,8 @@
+import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { graph, run } from '../db.js';
 import { render, type Step } from '../path.js';
-import { explainPath, migrationBatches, recall, setStatus } from '../tools.js';
+import { explainPath, listChanges, listFindings, migrationBatches, recall, setStatus } from '../tools.js';
 
 // Actions: one GitHub issue per migration batch, and a pull request when the fix is mechanical
 // (the change names a replacement value or param, or a saved recipe covers it).
@@ -101,6 +102,31 @@ export function applyEdit(text: string, line: number, e: Edit): string | undefin
   return undefined;
 }
 
+const VERB: Record<string, string> = { removed: 'remove', renamed: 'rename', deprecated: 'deprecate', retired: 'retire' };
+const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
+interface ChangeRef { id: string; kind: string; provider: string }
+
+/**
+ * Deterministic branch for a change event: `avert/<provider>/<verb>-<subject>`, at most 60 chars, derived only
+ * from the event. Events that slugify identically all get a stable 6-char hash of their id, whatever the run order.
+ */
+export function branchName(c: ChangeRef, all: ChangeRef[]): string {
+  const make = (x: ChangeRef, suffix = '') => {
+    const head = `avert/${slug(x.provider)}/${VERB[x.kind] ?? slug(x.kind)}-`;
+    const subject = slug(x.id.slice(x.id.lastIndexOf(':') + 1).replace(new RegExp(`^${x.provider}\\.`, 'i'), ''));
+    const room = 60 - head.length - suffix.length;
+    const cut = subject.length > room ? subject.slice(0, room + 1).replace(/-[^-]*$/, '') : subject; // whole words only
+    return head + cut + suffix;
+  };
+  const name = make(c);
+  return all.some((o) => o.id !== c.id && make(o) === name) ? make(c, '-' + createHash('sha256').update(c.id).digest('hex').slice(0, 6)) : name;
+}
+
+/**
+ * One branch and one PR per change event, covering every call site of that change. Re-running resets the
+ * branch to the base, force-pushes, and updates the open PR instead of opening another.
+ */
 export async function openPr(args: { repo: string; finding_id: string }) {
   const { finding, path } = await explainPath({ repo: args.repo, finding_id: args.finding_id });
   if (finding.kind === 'added') throw new Error('Added capabilities produce notices, never pull requests.');
@@ -108,31 +134,55 @@ export async function openPr(args: { repo: string; finding_id: string }) {
   if (!edit) throw new Error(`No replacement or recipe for "${finding.change.summary}"; open an issue instead (open_issue) or save a recipe first.`);
   const target = await githubRepo(args.repo);
   const prefix = process.env.AVERT_GITHUB_PATH_PREFIX ?? '';
-  const filePath = prefix + finding.callsite.file;
   const meta = await gh('GET', `/repos/${target}`);
   const base = meta.default_branch;
-  const file = await gh('GET', `/repos/${target}/contents/${encodeURI(filePath)}?ref=${base}`);
-  const original = Buffer.from(file.content, 'base64').toString('utf8');
-  const updated = applyEdit(original, finding.callsite.line, edit);
-  if (!updated) throw new Error(`Could not find \`${edit.from}\` near ${filePath}:${finding.callsite.line} on ${base}.`);
+
+  // This finding first (its edit must apply), then every other call site of the same change.
+  const siblings = (await listFindings({ repo: args.repo })).findings.filter((f) => f.change.id === finding.change.id && f.id !== finding.id);
+  const files = new Map<string, { sha: string; original: string; text: string }>();
+  const sites: string[] = [];
+  for (const f of [finding, ...siblings]) {
+    const e = f === finding ? edit : await plannedEdit(args.repo, f.id);
+    if (!e) continue;
+    const filePath = prefix + f.callsite.file;
+    if (!files.has(filePath)) {
+      const file = await gh('GET', `/repos/${target}/contents/${encodeURI(filePath)}?ref=${base}`);
+      const original = Buffer.from(file.content, 'base64').toString('utf8');
+      files.set(filePath, { sha: file.sha, original, text: original });
+    }
+    const entry = files.get(filePath)!;
+    const updated = applyEdit(entry.text, f.callsite.line, e);
+    if (updated) { entry.text = updated; sites.push(`${filePath}:${f.callsite.line}`); }
+    else if (f === finding) throw new Error(`Could not find \`${e.from}\` near ${filePath}:${f.callsite.line} on ${base}.`);
+  }
+
+  const changes = (await listChanges({ repo: args.repo })).changes;
+  const branch = branchName(changes.find((c) => c.id === finding.change.id) ?? { id: finding.change.id, kind: finding.kind, provider: 'provider' }, changes);
   const sha = (await gh('GET', `/repos/${target}/git/ref/heads/${base}`)).object.sha;
-  const branch = `avert/${finding.change.id.replace(/[^a-zA-Z0-9._-]+/g, '-').slice(0, 60)}-${Date.now().toString(36)}`;
-  await gh('POST', `/repos/${target}/git/refs`, { ref: `refs/heads/${branch}`, sha });
-  await gh('PUT', `/repos/${target}/contents/${encodeURI(filePath)}`, {
-    message: `fix: ${edit.from} -> ${edit.to} (${finding.change.summary})`,
-    content: Buffer.from(updated).toString('base64'), sha: file.sha, branch,
-  });
-  const pr = await gh('POST', `/repos/${target}/pulls`, {
+  const exists = await gh('GET', `/repos/${target}/git/ref/heads/${branch}`).then(() => true, () => false);
+  if (exists) await gh('PATCH', `/repos/${target}/git/refs/heads/${branch}`, { sha, force: true });
+  else await gh('POST', `/repos/${target}/git/refs`, { ref: `refs/heads/${branch}`, sha });
+  for (const [filePath, f] of files) {
+    if (f.text === f.original) continue;
+    await gh('PUT', `/repos/${target}/contents/${encodeURI(filePath)}`, {
+      message: `fix: ${edit.from} -> ${edit.to} (${finding.change.summary})`,
+      content: Buffer.from(f.text).toString('base64'), sha: f.sha, branch,
+    });
+  }
+
+  const pull = {
     title: `Avert: replace ${edit.from} with ${edit.to}`,
-    head: branch, base,
     body: [
       `**Change:** ${finding.change.summary} ([source](${finding.change.source_url}))`,
-      `**Fix:** \`${edit.from}\` → \`${edit.to}\` in \`${filePath}\` (from ${edit.source}).`,
+      `**Fix:** \`${edit.from}\` → \`${edit.to}\` at ${sites.map((x) => `\`${x}\``).join(', ')} (from ${edit.source}).`,
       `**Reaches:** ${finding.routes.map((r: string) => `\`${r}\``).join(', ') || 'no known route'}${finding.owners.length ? `, owned by ${finding.owners.join(', ')}` : ''}.`,
       `### Path\n\n${fence(path)}`,
       `---\n_Opened by [Avert](https://github.com/daryl-micah/avert). Nothing is merged automatically; review before merging._`,
     ].join('\n\n'),
-  });
+  };
+  // Resetting the branch to the base leaves it with no diff, and GitHub closes the PR then; so look at closed PRs too and reopen.
+  const prior = (await gh('GET', `/repos/${target}/pulls?head=${target.split('/')[0]}:${encodeURIComponent(branch)}&state=all`)).find((p: any) => !p.merged_at);
+  const pr = prior ? await gh('PATCH', `/repos/${target}/pulls/${prior.number}`, { ...pull, state: 'open' }) : await gh('POST', `/repos/${target}/pulls`, { ...pull, head: branch, base });
   await setStatus(args.repo, args.finding_id, 'done', pr.html_url);
-  return { url: pr.html_url, edit, finding_id: args.finding_id, path };
+  return { url: pr.html_url, branch, updated: !!prior, edit, finding_id: args.finding_id, path };
 }
