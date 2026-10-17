@@ -14,7 +14,8 @@
     "avert": "tsx src/cli.ts",
     "build": "tsc -p .",
     "typecheck": "tsc -p . --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "docs:gen": "tsx scripts/gen-docs.ts"
   },
   "dependencies": {
     "@hono/node-server": "^2.1.5",
