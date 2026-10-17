@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Avert — path view</title>
+<style>
+  :root {
+    --bg: #f7f7f5; --panel: #ffffff; --ink: #1c1c1a; --muted: #6b6b66; --line: #dcdcd6; --accent: #1f5eff;
+    --change: #c2410c; --surface: #7c3aed; --call: #0f766e; --fn: #475569; --route: #1f5eff; --team: #a16207;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #121211; --panel: #1b1b19; --ink: #ecece8; --muted: #9a9a93; --line: #34342f; --accent: #6b93ff;
+      --change: #fb923c; --surface: #a78bfa; --call: #2dd4bf; --fn: #94a3b8; --route: #6b93ff; --team: #facc15;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.45 system-ui, sans-serif; }
+  header { padding: 14px 16px; border-bottom: 1px solid var(--line); display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  header h1 { font-size: 17px; margin: 0; }
+  header .sub { color: var(--muted); }
+  select { font: inherit; padding: 4px 8px; background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: 6px; }
+  main { display: grid; grid-template-columns: minmax(260px, 380px) 1fr; gap: 16px; padding: 16px; max-width: 1200px; margin: 0 auto; }
+  @media (max-width: 760px) { main { grid-template-columns: 1fr; } }
+  .list { display: flex; flex-direction: column; gap: 8px; }
+  .item { text-align: left; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; color: inherit; font: inherit; cursor: pointer; }
+  .item[aria-current="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+  .item .t { font-weight: 600; overflow-wrap: anywhere; }
+  .meta { color: var(--muted); font-size: 13px; margin-top: 2px; word-break: break-word; }
+  .tag { display: inline-block; font-size: 12px; padding: 1px 7px; border-radius: 99px; border: 1px solid var(--line); margin-right: 4px; }
+  .path { display: flex; flex-direction: column; align-items: stretch; }
+  .node { background: var(--panel); border: 1px solid var(--line); border-left: 5px solid var(--c, var(--fn)); border-radius: 8px; padding: 10px 12px; }
+  .node .k { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--c, var(--fn)); font-weight: 600; }
+  .node .l { font-family: ui-monospace, monospace; font-size: 14px; word-break: break-word; }
+  .edge { align-self: center; color: var(--muted); font: 12px ui-monospace, monospace; padding: 4px 0; display: flex; flex-direction: column; align-items: center; }
+  .edge::before, .edge::after { content: ""; width: 1px; height: 8px; background: var(--line); }
+  .empty { color: var(--muted); padding: 24px 0; }
+  h2 { font-size: 15px; margin: 0 0 8px; overflow-wrap: anywhere; }
+  main > section { min-width: 0; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Avert</h1><span class="sub">from a provider change to the route and team it reaches</span>
+  <select id="repo" aria-label="Repository"></select>
+</header>
+<main>
+  <section><h2>Findings</h2><div class="list" id="findings"></div></section>
+  <section><h2 id="ptitle">Evidence path</h2><div id="path" class="path"><div class="empty">Pick a finding.</div></div></section>
+</main>
+<script>
+const COLORS = { ChangeEvent: '--change', Provider: '--surface', Resource: '--surface', Operation: '--surface', Param: '--surface', Value: '--surface',
+  CallSite: '--call', Function: '--fn', Route: '--route', Team: '--team' };
+const $ = (id) => document.getElementById(id);
+const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
+const get = async (u) => { const r = await fetch(u); if (!r.ok) throw new Error(u + ' ' + r.status); return r.json(); };
+
+async function loadRepos() {
+  const repos = await get('/api/repos');
+  const sel = $('repo');
+  for (const r of repos) sel.append(new Option(r.replace(/^avert:/, ''), r));
+  const want = new URLSearchParams(location.search).get('repo');
+  if (want && repos.includes(want)) sel.value = want;
+  sel.onchange = () => loadFindings();
+  if (repos.length) await loadFindings(); else $('findings').append(el('div', 'empty', 'No indexed repositories.'));
+}
+
+async function loadFindings() {
+  const repo = $('repo').value;
+  const list = $('findings');
+  list.replaceChildren();
+  const findings = await get('/api/findings?repo=' + encodeURIComponent(repo));
+  if (!findings.length) list.append(el('div', 'empty', 'No findings.'));
+  const open = new URLSearchParams(location.search).get('finding');
+  let first;
+  for (const f of findings) {
+    const b = el('button', 'item');
+    b.type = 'button';
+    b.append(el('div', 't', f.change.summary));
+    const m = el('div', 'meta');
+    m.append(el('span', 'tag', f.kind), el('span', 'tag', f.status));
+    m.append(document.createTextNode(`${f.callsite.file}:${f.callsite.line}` + (f.routes.length ? ' → ' + f.routes.join(', ') : '')));
+    b.append(m);
+    b.onclick = () => show(repo, f, b);
+    list.append(b);
+    if (f.id === open) first = [f, b];
+  }
+  const pick = first ?? (findings[0] && [findings[0], list.firstChild]);
+  if (pick) show(repo, pick[0], pick[1]);
+}
+
+async function show(repo, f, btn) {
+  for (const b of document.querySelectorAll('.item')) b.removeAttribute('aria-current');
+  btn.setAttribute('aria-current', 'true');
+  history.replaceState(null, '', `?repo=${encodeURIComponent(repo)}&finding=${encodeURIComponent(f.id)}`);
+  $('ptitle').textContent = 'Evidence path — ' + f.change.summary;
+  const box = $('path');
+  box.replaceChildren();
+  const { path } = await get(`/api/path?repo=${encodeURIComponent(repo)}&finding=${encodeURIComponent(f.id)}`);
+  if (!path.length) return box.append(el('div', 'empty', 'No path found for this finding.'));
+  path.forEach((s, i) => {
+    const n = el('div', 'node');
+    n.style.setProperty('--c', `var(${COLORS[s.kind] ?? '--fn'})`);
+    n.append(el('div', 'k', s.kind.replace(/([a-z])([A-Z])/g, '$1 $2')), el('div', 'l', s.label));
+    if (s.file) n.append(el('div', 'meta', s.file + (s.line ? ':' + s.line : '')));
+    box.append(n);
+    if (s.edge && i < path.length - 1) box.append(el('div', 'edge', s.edge));
+  });
+}
+
+loadRepos().catch((e) => $('findings').append(el('div', 'empty', String(e))));
+</script>
+</body>
+</html>

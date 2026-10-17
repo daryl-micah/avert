@@ -6,6 +6,7 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { migrate } from './agents/migrator.js';
 import { watch } from './agents/watcher.js';
 import { buildServer } from './mcp.js';
+import { startWeb } from './web/server.js';
 import { render } from './path.js';
 import { blastRadius, listChanges } from './tools.js';
 
@@ -47,13 +48,17 @@ async function main() {
       if (args.includes('--json')) console.log(JSON.stringify(r));
       break;
     }
+    case 'web': {
+      startWeb();
+      return 'keep-open';
+    }
     case 'mcp': {
       // stdio MCP server; the connection stays open, so skip the closing `finally`
       await buildServer({ readOnly: args.includes('--read-only') }).connect(new StdioServerTransport());
       return 'keep-open';
     }
     default:
-      console.log('usage: avert <index|sync|watch|migrate|changes|blast|mcp> [repo] [change_id] [--agent name] [--limit n] [--dry-run]');
+      console.log('usage: avert <index|sync|watch|migrate|changes|blast|mcp|web> [repo] [change_id] [--agent name] [--limit n] [--dry-run]');
       process.exitCode = 1;
   }
 }

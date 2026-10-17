@@ -17,8 +17,10 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@hono/node-server": "^2.1.5",
     "@modelcontextprotocol/sdk": "^1.32.1",
     "falkordb": "^6.8.0",
+    "hono": "^4.13.13",
     "openai": "^7.34.0",
     "tree-sitter-python": "^0.25.0",
     "tree-sitter-typescript": "^0.23.2",
