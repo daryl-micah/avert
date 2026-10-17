@@ -1,0 +1,3 @@
+# Synthetic demo service. Team handles only.
+/checkout/        @acme/payments
+/support/         @acme/support-ai

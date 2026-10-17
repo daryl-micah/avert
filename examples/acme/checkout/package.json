@@ -1,0 +1,8 @@
+{
+  "name": "acme-checkout",
+  "private": true,
+  "dependencies": {
+    "express": "^4.21.0",
+    "stripe": "^22.6.0"
+  }
+}
