@@ -1,0 +1,5 @@
+# The site is its own project (Vercel builds from this directory); the repo root has a separate workspace file.
+packages: []
+allowBuilds:
+  esbuild: false
+  sharp: false

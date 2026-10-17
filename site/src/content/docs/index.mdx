@@ -1,0 +1,107 @@
+---
+title: Avert
+description: Knows every external API your code calls, sees when a provider changes one, and traces what it breaks.
+template: splash
+hero:
+  tagline: A model gets retired, an SDK drops a parameter. Avert shows the exact line, the route and the team it breaks, and opens the fix.
+  actions:
+    - text: Quickstart
+      link: /quickstart/
+      icon: right-arrow
+    - text: Live demo
+      link: https://avert-demo.fly.dev
+      icon: external
+      variant: minimal
+    - text: GitHub
+      link: https://github.com/daryl-micah/avert
+      icon: github
+      variant: minimal
+---
+
+import { Card, CardGrid, Steps } from '@astrojs/starlight/components';
+
+## The problem
+
+External APIs change underneath running code. Some changes have a version to bump. Many don't: a retired model id, a sunset API
+version, a parameter removed on the server. Dependency bots only read manifests, and changelogs go unread. None of them connect a
+provider's change to the lines, routes and teams it reaches, or remember what was decided last time.
+
+## What Avert does
+
+Avert indexes your repository into a [FalkorDB](https://www.falkordb.com) graph, tracks provider changes from machine-readable
+sources, and joins the two. It is a neutral tool: any provider with a published SDK is covered by the same machinery.
+
+Here is a real finding from the demo service. A rolling alias, `claude-3-5-sonnet-latest`, resolves to a model that was retired on
+2025-10-28. Nothing in the manifest changed, and no version could have been bumped. The path below is what Avert returns.
+
+```text title="avert blast examples/acme lifecycle:anthropic:claude-3-5-sonnet-20241022" class="path-demo"
+ChangeEvent retired: claude-3-5-sonnet-20241022 retired on 2025-10-28; replacement claude-sonnet-5-5
+            -AFFECTS->
+Value       "claude-3-5-sonnet-20241022"
+            <-RESOLVES_TO-
+Value       "claude-3-5-sonnet-latest" (unpinned alias)
+            <-PASSES-
+CallSite    msg = claude.messages.create(  (support/app/llm.py:19)
+            <-HAS_CALL_SITE-
+Function    answer()  (support/app/llm.py:10)
+            <-CALLS-
+Function    draft_reply()  (support/app/main.py:19)
+            <-CALLS-
+Function    reply()  (support/app/main.py:15)
+            <-HANDLED_BY-
+Route       POST /support/reply  (support/app/main.py:14)
+            (file support/app/llm.py) <-OWNS-
+Team        @acme/support-ai
+```
+
+[See this path drawn in the live demo.](https://avert-demo.fly.dev/?repo=avert:acme)
+
+## How it works
+
+<Steps>
+
+1. **Index.** Tree-sitter reads Python and TypeScript and writes routes, functions, call chains and every external API call site,
+   resolved to a provider, operation, parameter and value.
+
+2. **Detect.** Avert diffs the SDK your manifest declares against the latest release, and reads published model lifecycle data.
+   Changes become events attached to the API surface, and only the ones your code actually calls become findings.
+
+3. **Trace and act.** One graph query walks from the change down the API surface to your call sites, then up the call chain to
+   routes and owners. Agents rank the findings, group them into batches, and open an issue or pull request with the path as evidence.
+
+</Steps>
+
+## Built for agents
+
+<CardGrid>
+  <Card title="Named domain tools" icon="puzzle">
+    16 MCP tools such as `blast_radius`, `rank_findings` and `claim_finding`, not a raw Cypher box. See the [tool reference](/reference/mcp-tools/).
+  </Card>
+  <Card title="Shared memory" icon="seti:json">
+    Decisions, sessions and fix recipes live in the graph. A second client, or a second repository, recalls them without being told.
+  </Card>
+  <Card title="Safe coordination" icon="approve-check">
+    Agents claim findings atomically, so parallel migrators never collide. Pull requests are never merged automatically.
+  </Card>
+  <Card title="Read the queries" icon="open-book">
+    Every Cypher query and algorithm call is in one file and documented. See the [query reference](/reference/queries/).
+  </Card>
+</CardGrid>
+
+## Supported at launch
+
+| Provider | Detected from |
+|---|---|
+| OpenAI | npm + PyPI SDK diffs, model lifecycle data |
+| Anthropic | npm + PyPI SDK diffs, model lifecycle data |
+| Google Gemini | npm + PyPI SDK diffs, model lifecycle data |
+| Stripe | npm + PyPI SDK diffs |
+| Twilio | npm + PyPI SDK diffs |
+
+Providers are data, not code: adding one is a few lines of YAML ([Contributing](/contributing/)). Avert indexes Python and
+TypeScript. See [Limits and roadmap](/limits/) for what it cannot see.
+
+## Try it
+
+- **Hosted, read-only:** `claude mcp add --transport http avert-demo https://avert-demo.fly.dev/mcp`, then ask for the findings in `avert:acme`.
+- **Locally:** follow the [Quickstart](/quickstart/).
