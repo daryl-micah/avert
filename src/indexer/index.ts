@@ -35,6 +35,7 @@ function sourceFiles(root: string): string[] {
   const out: string[] = [];
   const visit = (dir: string) => {
     for (const e of readdirSync(dir, { withFileTypes: true })) {
+      if (e.isSymbolicLink()) continue; // a cloned repo could link a source file to anything on this machine
       if (e.isDirectory()) { if (!SKIP_DIRS.has(e.name) && !e.name.startsWith('.')) visit(join(dir, e.name)); continue; }
       if (e.name.endsWith('.d.ts')) continue;
       if (e.name.endsWith('.py') || TS_EXT.some((x) => e.name.endsWith(x))) {
