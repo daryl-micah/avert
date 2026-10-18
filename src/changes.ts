@@ -51,10 +51,17 @@ export async function syncSdk(repo: string, opts: { to?: Record<string, string> 
   for (const { provider, eco, spec } of groups.values()) {
     const p = providerInfo(provider);
     const pkg = eco === 'npm' ? p.npm : p.pypi;
-    const from = await minVersion(eco, pkg, spec);
-    const to = opts.to?.[pkg] ?? (await latest(eco, pkg));
-    if (!from || from === to) continue;
-    const changes = await diffReleases(provider, eco, from, to);
+    let changes: Change[];
+    try {
+      const from = await minVersion(eco, pkg, spec);
+      const to = opts.to?.[pkg] ?? (await latest(eco, pkg));
+      if (!from || from === to) continue;
+      changes = await diffReleases(provider, eco, from, to);
+    } catch (e) {
+      // e.g. the pinned release has no wheel: skip this SDK diff, lifecycle changes still apply
+      console.warn(`sync: skipped ${pkg} SDK diff: ${(e as Error).message}`);
+      continue;
+    }
     const relevant = changes.filter((c) => usedOps.has(targetId(provider, { ...c.target, level: 'operation' })));
     await ingestChanges(repo, relevant);
     all.push(...relevant);
