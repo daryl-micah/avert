@@ -271,11 +271,11 @@ SET f.status = 'claimed', f.claimed_by = $agent, f.claimed_at = $now
 RETURN f.id AS id`;
 
 /** Who holds a finding (for a failed claim's message). Used by: claim_finding. */
-export const FINDING_STATUS = `MATCH (f:Finding {id: $id}) RETURN f.status AS status, f.claimed_by AS claimed_by`;
+export const FINDING_STATUS = `MATCH (f:Finding {id: $id}) RETURN f.status AS status, f.claimed_by AS claimed_by, f.url AS url`;
 
-/** Move a finding through its lifecycle: open -> claimed -> done | declined. Used by: migrator, record_decision. */
+/** Move a finding through its lifecycle: open -> claimed -> done | declined. Clears the agent holder: only CLAIM sets one. Used by: migrator, record_decision. */
 export const SET_STATUS = `
-MATCH (f:Finding {id: $id}) SET f.status = $status, f.updated_at = $now
+MATCH (f:Finding {id: $id}) SET f.status = $status, f.updated_at = $now, f.claimed_by = null
 WITH f WHERE $url IS NOT NULL SET f.url = $url`;
 
 /** Episodic memory: a decision about a finding, with who made it and from which client. Used by: record_decision. */

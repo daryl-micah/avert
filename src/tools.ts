@@ -173,7 +173,7 @@ export async function claimFinding(args: { repo: string; finding_id: string; age
   const ok = await run(g, Q.CLAIM, { id: args.finding_id, agent: args.agent, now: new Date().toISOString() });
   if (ok.length) return { claimed: true, finding_id: args.finding_id, agent: args.agent, path: (await explainPath(args)).path };
   const [s] = await run(g, Q.FINDING_STATUS, { id: args.finding_id });
-  return { claimed: false, finding_id: args.finding_id, status: s?.status ?? 'missing', claimed_by: s?.claimed_by ?? null, path: [] };
+  return { claimed: false, finding_id: args.finding_id, status: s?.status ?? 'missing', claimed_by: s?.claimed_by ?? null, url: s?.url ?? null, path: [] };
 }
 
 export async function setStatus(repo: string, findingId: string, status: 'open' | 'claimed' | 'done' | 'declined', url?: string) {

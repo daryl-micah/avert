@@ -21,7 +21,7 @@ export async function migrate(repo: string, opts: { agent?: string; limit?: numb
   const batchOf = async (f: any): Promise<string | undefined> => f.batch ?? (await callTool('migration_batches', { repo }, ctx)).batches.find((b: any) => b.findings.includes(f.id))?.id;
   for (const f of ranked.findings.slice(0, opts.limit ?? Infinity)) {
     const claim = await callTool('claim_finding', { repo, finding_id: f.id }, ctx);
-    if (!claim.claimed) { console.log(`${agent}: skip ${f.id} (held by ${claim.claimed_by})`); continue; }
+    if (!claim.claimed) { console.log(`${agent}: skip ${f.id} (${claim.claimed_by ? `held by ${claim.claimed_by}` : `covered by ${claim.url ?? claim.status}`})`); continue; }
     console.log(`${agent}: claimed ${f.change.summary} at ${f.callsite.file}:${f.callsite.line}`);
     const mem = await recall({ repo, finding_id: f.id });
     const blocking = mem.decisions.find((d: any) => d.kind === 'wontfix' || d.kind === 'defer' || d.kind === 'accept_risk');
