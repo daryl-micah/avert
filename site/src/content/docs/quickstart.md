@@ -80,3 +80,5 @@ otherwise. Continue with [Connect Claude Code or Cursor](/connect/) and [Agents 
 | `AVERT_REPO` | working directory | Default `repo` for MCP tools |
 | `AVERT_CACHE` | `~/.cache/avert` | Cloned repos and extracted SDK surfaces |
 | `PORT` | `8787` | `avert web` port |
+| `HOST` | `127.0.0.1` | `avert web` bind address; the Docker image sets `0.0.0.0` |
+| `AVERT_PUBLIC_GRAPHS` | every graph, or none when `NODE_ENV=production` | Comma-separated graphs `avert web` and `mcp --read-only` may serve |
