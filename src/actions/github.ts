@@ -23,13 +23,14 @@ async function gh(method: string, path: string, body?: unknown): Promise<any> {
   return res.status === 204 ? null : res.json();
 }
 
-/** owner/name of the GitHub repo for a repo graph: AVERT_GITHUB_REPO overrides the indexed URL. */
+/**
+ * owner/name of the GitHub repo that issues and PRs go to. It must be named explicitly in AVERT_GITHUB_REPO: the indexed
+ * URL is often someone else's public repo, and Avert never writes to a repo just because it indexed it.
+ */
 async function githubRepo(repo: string): Promise<string> {
-  if (process.env.AVERT_GITHUB_REPO) return process.env.AVERT_GITHUB_REPO;
-  const [r] = await run(await graph(repo), `MATCH (r:Repo) RETURN r.url AS url LIMIT 1`);
-  const m = String(r?.url ?? '').match(/github\.com[/:]([^/]+\/[^/.]+)/);
-  if (!m) throw new Error(`${repo} is not a GitHub repository; set AVERT_GITHUB_REPO=owner/name to choose where issues and PRs go.`);
-  return m[1];
+  const target = process.env.AVERT_GITHUB_REPO;
+  if (!target || !/^[\w.-]+\/[\w.-]+$/.test(target)) throw new Error(`Set AVERT_GITHUB_REPO=owner/name to the repo you own where issues and PRs for ${repo} may go.`);
+  return target;
 }
 
 const fence = (path: Step[]) => '```\n' + render(path) + '\n```';

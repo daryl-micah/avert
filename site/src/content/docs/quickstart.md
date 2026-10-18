@@ -54,7 +54,7 @@ pnpm avert web      # http://localhost:8787, read-only path view
 ## 5. Let agents act
 
 Set a [Groq](https://console.groq.com) key, then run the watcher and a migrator. The migrator opens a pull request on the repo named
-by `AVERT_GITHUB_REPO` (it uses `GITHUB_TOKEN`, or `gh auth token`):
+by `AVERT_GITHUB_REPO`, and only there: it never writes to a repo just because it indexed it (it uses `GITHUB_TOKEN`, or `gh auth token`):
 
 ```bash
 export GROQ_API_KEY=...
@@ -74,7 +74,7 @@ otherwise. Continue with [Connect Claude Code or Cursor](/connect/) and [Agents 
 | `GROQ_API_KEY` | none | Agents use Groq's OpenAI-compatible API |
 | `AVERT_MODEL` | `openai/gpt-oss-120b` | Model for the agents |
 | `AVERT_LLM_BASE_URL` | Groq | Any OpenAI-compatible endpoint |
-| `AVERT_GITHUB_REPO` | the indexed repo's URL | Where issues and PRs go |
+| `AVERT_GITHUB_REPO` | none (required for issues and PRs) | The only repo issues and PRs go to |
 | `AVERT_GITHUB_PATH_PREFIX` | empty | Prefix when the repo is a subdirectory of the GitHub repo |
 | `AVERT_REPO` | working directory | Default `repo` for MCP tools |
 | `AVERT_CACHE` | `~/.cache/avert` | Cloned repos and extracted SDK surfaces |
