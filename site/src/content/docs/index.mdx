@@ -56,6 +56,21 @@ Team        @acme/support-ai
 
 [See this path drawn in the live demo.](https://avert-demo.fly.dev/?repo=avert:acme)
 
+## Powered by FalkorDB
+
+Avert's core question, *which routes and teams does this change break?*, is a path through links of unknown depth. That is the
+shape of problem a graph database answers directly, and [FalkorDB](https://www.falkordb.com) is where Avert keeps and queries its data.
+
+- **One query, the whole path.** A change goes down the API surface to your call sites, and up the call chain to routes and owners.
+  The database returns the nodes and edges it matched, so every finding comes with the evidence path you saw above.
+- **Algorithms next to the data.** PageRank ranks findings by how central their code is, and connected components group related
+  findings into a single issue, both run inside FalkorDB.
+- **Coordination without a lock service.** FalkorDB applies writes to a graph one at a time, so claiming a finding is a single
+  conditional write and two agents can never take the same one.
+- **Memory in the same graph.** Decisions and fix recipes sit next to the findings they are about, so later sessions recall them.
+
+[How Avert uses FalkorDB, with the queries.](/falkordb/)
+
 ## How it works
 
 <Steps>
