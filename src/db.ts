@@ -22,6 +22,10 @@ export async function connect(): Promise<FalkorDB> {
   if (client) return client;
   const url = process.env.FALKORDB_URL ?? 'falkor://localhost:6380';
   const u = new URL(url);
+  // Only falkors:// uses TLS. Warn (not fail: some hosted tiers have no TLS) when a password would cross the network in clear.
+  if (u.password && u.protocol !== 'falkors:' && !['localhost', '127.0.0.1', '[::1]'].includes(u.hostname)) {
+    console.warn(`FALKORDB_URL sends the password to ${u.hostname} unencrypted; use falkors:// if the server supports TLS.`);
+  }
   client = await FalkorDB.connect({
     socket: { host: u.hostname, port: Number(u.port || 6379), tls: u.protocol === 'falkors:' },
     username: u.username ? decodeURIComponent(u.username) : undefined,

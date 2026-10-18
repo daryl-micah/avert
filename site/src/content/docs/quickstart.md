@@ -13,7 +13,7 @@ pnpm install
 docker compose up -d        # FalkorDB on localhost:6380
 ```
 
-Avert reads `FALKORDB_URL` (default `falkor://localhost:6380`). Use `falkor://user:password@host:port` for a hosted instance.
+Avert reads `FALKORDB_URL` (default `falkor://localhost:6380`). Use `falkors://user:password@host:port` (TLS) for a hosted instance, or `falkor://` if it has no TLS; Avert warns when a password would travel unencrypted.
 
 ## 2. Index the demo service
 
