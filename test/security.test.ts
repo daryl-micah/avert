@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { applyEdit } from '../src/actions/github.js';
+import { buildApp } from '../src/web/server.js';
 
 describe('applyEdit', () => {
   it('replaces a model id literal and renames a param key', () => {
@@ -10,5 +11,13 @@ describe('applyEdit', () => {
     expect(() => applyEdit(`m = "gpt-4"`, 1, { kind: 'value', from: 'gpt-4', to: `gpt-5"); require('child_process').exec('x'); ("` })).toThrow(/Refusing/);
     expect(() => applyEdit(`f(a=1)`, 1, { kind: 'param', from: 'a', to: '$&b' })).toThrow(/Refusing/);
     expect(() => applyEdit(`f(a=1)`, 1, { kind: 'param', from: 'a|.*', to: 'b' })).toThrow(/Refusing/);
+  });
+});
+
+describe('local web server', () => {
+  it('rejects requests addressed to another host (DNS rebinding)', async () => {
+    const app = buildApp({ localOnly: true });
+    expect((await app.request('http://evil.example/api/repos', { headers: { host: 'evil.example' } })).status).toBe(403);
+    expect((await app.request('http://evil.example/mcp', { method: 'POST', headers: { host: 'evil.example:8787' } })).status).toBe(403);
   });
 });

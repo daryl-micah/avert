@@ -10,8 +10,13 @@ import { rateLimit } from './ratelimit.js';
 // Hosted demo: a read-only view of the graphs (page, JSON API and MCP). No writes, no LLM calls, no GitHub actions.
 // Only the public graphs (AVERT_PUBLIC_GRAPHS) are served, so the repo parameter cannot reach anything else.
 
-export function buildApp(): Hono {
+export function buildApp(opts: { localOnly?: boolean } = {}): Hono {
   const app = new Hono();
+  // Bound to loopback, answer only requests addressed to it: a page on another site cannot reach the API or MCP through DNS rebinding.
+  if (opts.localOnly) app.use('*', async (c, next) => {
+    const host = (c.req.header('host') ?? '').replace(/:\d+$/, '');
+    return ['localhost', '127.0.0.1', '[::1]'].includes(host) ? next() : c.json({ error: 'forbidden host' }, 403);
+  });
   const limit = rateLimit(60, 60_000); // per client per minute, shared by the API and MCP
   app.use('/api/*', limit);
   app.use('/pr', limit);
@@ -51,6 +56,7 @@ export function buildApp(): Hono {
 }
 
 export function startWeb(port = Number(process.env.PORT ?? 8787)) {
-  serve({ fetch: buildApp().fetch, port, hostname: process.env.HOST ?? '0.0.0.0' });
+  const hostname = process.env.HOST ?? '127.0.0.1'; // the Docker image sets HOST=0.0.0.0 for the hosted demo
+  serve({ fetch: buildApp({ localOnly: ['127.0.0.1', 'localhost', '::1'].includes(hostname) }).fetch, port, hostname });
   console.log(`avert web: http://localhost:${port}`);
 }
