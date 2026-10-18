@@ -25,7 +25,7 @@ export async function watch(repo: string, opts: { agent?: string } = {}) {
   }
   const run = await runAgent({
     // The model only leaves notes: a wontfix or accept_risk it was talked into by text in a tool result would silently decline a finding.
-    repo, ctx, system: SYSTEM, fixed: { kind: 'note' },
+    repo, ctx, system: SYSTEM, fixedFor: { record_decision: { kind: 'note' } },
     task: `Repository ${repo}. New changes: ${JSON.stringify(synced.changes)}. Triage them.`,
     tools: ['rank_findings', 'migration_batches', 'recall', 'explain_path', 'blast_radius', 'list_changes', 'record_decision'],
   });

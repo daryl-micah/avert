@@ -34,11 +34,11 @@ function nullableOptionals(schema: JsonSchema, hide: string[] = []): JsonSchema 
 
 export interface AgentRun { text: string; calls: { tool: string; args: unknown; ok: boolean }[] }
 
-export async function runAgent(opts: { repo: string; system: string; task: string; tools: string[]; fixed?: Record<string, string | undefined>; ctx: Ctx; maxSteps?: number; log?: (s: string) => void }): Promise<AgentRun> {
+export async function runAgent(opts: { repo: string; system: string; task: string; tools: string[]; fixed?: Record<string, string | undefined>; fixedFor?: Record<string, Record<string, string>>; ctx: Ctx; maxSteps?: number; log?: (s: string) => void }): Promise<AgentRun> {
   const log = opts.log ?? ((s) => console.log(s));
   const defs = TOOLS.filter((t) => opts.tools.includes(t.name)).map((t) => ({
     type: 'function' as const,
-    function: { name: t.name, description: t.description, parameters: nullableOptionals(z.toJSONSchema(z.object(t.shape)) as JsonSchema, Object.keys(opts.fixed ?? {})) },
+    function: { name: t.name, description: t.description, parameters: nullableOptionals(z.toJSONSchema(z.object(t.shape)) as JsonSchema, Object.keys({ ...opts.fixed, ...opts.fixedFor?.[t.name] })) },
   }));
   const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [{ role: 'system', content: opts.system }, { role: 'user', content: opts.task }];
   const calls: AgentRun['calls'] = [];
@@ -55,7 +55,7 @@ export async function runAgent(opts: { repo: string; system: string; task: strin
       try {
         args = Object.fromEntries(Object.entries(JSON.parse(tc.function.arguments || '{}')).filter(([, v]) => v !== null));
         log(`  → ${tc.function.name}(${JSON.stringify(args)})`);
-        content = compact(await callTool(tc.function.name, { ...args, ...opts.fixed, repo: opts.repo }, opts.ctx));
+        content = compact(await callTool(tc.function.name, { ...args, ...opts.fixed, ...opts.fixedFor?.[tc.function.name], repo: opts.repo }, opts.ctx));
       } catch (e) {
         ok = false;
         content = `Error: ${(e as Error).message}`;
