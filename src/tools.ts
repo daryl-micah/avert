@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { connect, graph, graphName, run, SHARED_GRAPH } from './db.js';
 import { backward, forward, join, step, type GNode, type Step } from './path.js';
 import * as Q from './queries.js';
@@ -158,10 +159,9 @@ export async function migrationBatches(args: { repo: string }) {
   return { batches, path: first?.path ?? [] };
 }
 
-function shortHash(s: string): string {
-  let h = 2166136261;
-  for (const ch of s) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
-  return (h >>> 0).toString(36);
+/** Content id: 64 bits of sha256, so two different recipes cannot be made to share an id (a 32-bit hash could be). */
+function shortHash(...parts: string[]): string {
+  return createHash('sha256').update(parts.join('\0')).digest('hex').slice(0, 16);
 }
 
 // ---------------------------------------------------------------------------
@@ -192,7 +192,7 @@ export async function recordDecision(args: { repo: string; finding_id: string; k
 
 export async function saveRecipe(args: { repo: string; change_id: string; from: string; to: string; steps: string; agent: string; callsite_id?: string }) {
   const g = await graph(args.repo);
-  const id = `recipe:${shortHash(args.change_id + args.from + args.to)}`;
+  const id = `recipe:${shortHash(args.change_id, args.from, args.to)}`;
   await run(g, Q.SAVE_RECIPE, { id, change: args.change_id, steps: args.steps, from: args.from, to: args.to, agent: args.agent, callsite: args.callsite_id ?? null, now: new Date().toISOString() });
   return { recipe_id: id };
 }

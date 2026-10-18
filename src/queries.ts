@@ -296,11 +296,11 @@ OPTIONAL MATCH (cs:CallSite {id: $callsite})
 FOREACH (_ IN CASE WHEN cs IS NULL THEN [] ELSE [1] END | MERGE (r)-[:WORKED_AT]->(cs))
 RETURN r.id AS id`;
 
-/** Publish a recipe to the shared graph, keyed by change id (ids are identical across repo graphs). Used by: publish_recipe. */
+/** Publish a recipe to the shared graph, keyed by change id (ids are identical across repo graphs). A published recipe is never overwritten. Used by: publish_recipe. */
 export const PUBLISH_RECIPE = `
 MERGE (c:ChangeEvent {id: $change}) SET c.summary = $summary
 MERGE (r:Recipe {id: $id})
-SET r.steps = $steps, r.from = $from, r.to = $to, r.created_by = $agent, r.at = $now, r.origin = $origin, r.uses = coalesce(r.uses, 0)
+ON CREATE SET r.steps = $steps, r.from = $from, r.to = $to, r.created_by = $agent, r.at = $now, r.origin = $origin, r.uses = 0
 MERGE (r)-[:FIXES]->(c)
 RETURN r.id AS id`;
 

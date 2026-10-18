@@ -431,12 +431,12 @@ RETURN r.id AS id
 
 ### PUBLISH_RECIPE
 
-Publish a recipe to the shared graph, keyed by change id (ids are identical across repo graphs). Used by: publish_recipe.
+Publish a recipe to the shared graph, keyed by change id (ids are identical across repo graphs). A published recipe is never overwritten. Used by: publish_recipe.
 
 ```cypher
 MERGE (c:ChangeEvent {id: $change}) SET c.summary = $summary
 MERGE (r:Recipe {id: $id})
-SET r.steps = $steps, r.from = $from, r.to = $to, r.created_by = $agent, r.at = $now, r.origin = $origin, r.uses = coalesce(r.uses, 0)
+ON CREATE SET r.steps = $steps, r.from = $from, r.to = $to, r.created_by = $agent, r.at = $now, r.origin = $origin, r.uses = 0
 MERGE (r)-[:FIXES]->(c)
 RETURN r.id AS id
 ```
