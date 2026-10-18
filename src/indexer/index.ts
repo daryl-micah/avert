@@ -192,7 +192,7 @@ export async function indexRepo(repo: string): Promise<IndexResult> {
     for (const rt of ff.routes) {
       const h = resolveCallee(ff, '<module>', rt.handler.split('.'));
       const handler = lookup(f, rt.handler) ?? h?.to;
-      if (handler) rows.routes.push({ id: `${rt.method} ${rt.path}`, method: rt.method, path: rt.path, file: f, line: rt.line, handler });
+      if (handler) rows.routes.push({ id: `${f}:${rt.method} ${rt.path}`, method: rt.method, path: rt.path, file: f, line: rt.line, handler });
     }
     for (const s of ff.callSites) {
       const op = ids.operation(s.provider, s.resource, s.method);
