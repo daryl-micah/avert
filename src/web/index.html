@@ -38,6 +38,8 @@
   .empty { color: var(--muted); padding: 24px 0; }
   h2 { font-size: 15px; margin: 0 0 8px; overflow-wrap: anywhere; }
   main > section { min-width: 0; }
+  a.pr { display: inline-block; margin-bottom: 8px; font-weight: 600; color: var(--route); text-decoration: none; }
+  a.pr:hover { text-decoration: underline; }
 </style>
 </head>
 <body>
@@ -97,6 +99,11 @@ async function show(repo, f, btn) {
   $('ptitle').textContent = 'Evidence path — ' + f.change.summary;
   const box = $('path');
   box.replaceChildren();
+  if (f.url) {
+    const a = el('a', 'pr', f.url.includes('/pull/') ? 'Open the pull request ↗' : 'Open the issue ↗');
+    a.href = `/pr?repo=${encodeURIComponent(repo)}&finding=${encodeURIComponent(f.id)}`;
+    box.append(a);
+  }
   const { path } = await get(`/api/path?repo=${encodeURIComponent(repo)}&finding=${encodeURIComponent(f.id)}`);
   if (!path.length) return box.append(el('div', 'empty', 'No path found for this finding.'));
   path.forEach((s, i) => {

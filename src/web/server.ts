@@ -14,6 +14,7 @@ export function buildApp(): Hono {
   const app = new Hono();
   const limit = rateLimit(60, 60_000); // per client per minute, shared by the API and MCP
   app.use('/api/*', limit);
+  app.use('/pr', limit);
   app.use('/mcp', limit);
   const known = async (c: { req: { query(k: string): string | undefined } }) => {
     const repo = c.req.query('repo') ?? '';
@@ -31,6 +32,13 @@ export function buildApp(): Hono {
     const id = c.req.query('finding');
     if (!repo || !id) return c.json({ error: 'unknown repo or finding' }, 404);
     try { return c.json(await explainPath({ repo, finding_id: id })); } catch { return c.json({ error: 'unknown finding' }, 404); }
+  });
+
+  // Redirect to the pull request (or issue) Avert opened for a finding; the URL comes from the graph, never from the request.
+  app.get('/pr', async (c) => {
+    const repo = await known(c);
+    const url = repo && (await listFindings({ repo })).findings.find((f: any) => f.id === c.req.query('finding'))?.url;
+    return typeof url === 'string' && url.startsWith('https://github.com/') ? c.redirect(url, 302) : c.json({ error: 'no pull request for this finding' }, 404);
   });
 
   // Read-only MCP over streamable HTTP, stateless: a fresh server per request, so nothing is held between calls.
