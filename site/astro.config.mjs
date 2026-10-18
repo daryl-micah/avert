@@ -10,7 +10,7 @@ export default defineConfig({
       social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/daryl-micah/avert' }],
       customCss: ['./src/styles/custom.css'],
       sidebar: [
-        { label: 'Start here', items: ['quickstart', 'connect', 'concepts'] },
+        { label: 'Start here', items: ['quickstart', 'connect', 'concepts', 'falkordb'] },
         { label: 'Guides', items: ['agents', 'contributing', 'limits'] },
         { label: 'Reference', items: ['reference/mcp-tools', 'reference/queries'] },
       ],
