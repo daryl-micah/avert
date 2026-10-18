@@ -5,12 +5,16 @@ import { Hono } from 'hono';
 import { listRepoGraphs } from '../db.js';
 import { buildServer } from '../mcp.js';
 import { explainPath, listFindings } from '../tools.js';
+import { rateLimit } from './ratelimit.js';
 
 // Hosted demo: a read-only view of the graphs (page, JSON API and MCP). No writes, no LLM calls, no GitHub actions.
 // Only graphs that exist are served, so the repo parameter cannot reach anything else.
 
 export function buildApp(): Hono {
   const app = new Hono();
+  const limit = rateLimit(60, 60_000); // per client per minute, shared by the API and MCP
+  app.use('/api/*', limit);
+  app.use('/mcp', limit);
   const known = async (c: { req: { query(k: string): string | undefined } }) => {
     const repo = c.req.query('repo') ?? '';
     return (await listRepoGraphs()).includes(repo) ? repo : undefined;

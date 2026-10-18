@@ -13,7 +13,8 @@ claude mcp add --transport http avert-demo https://avert-demo.fly.dev/mcp
 ```
 
 It serves two pre-indexed graphs, `avert:acme` and `avert:flutter-stripe__flutter_stripe`, with the read tools only. Pass one of
-those names as `repo`. Write tools (`index_repo`, `claim_finding`, `open_pr` and the rest) are not exposed.
+those names as `repo`. Write tools (`index_repo`, `claim_finding`, `open_pr` and the rest) are not exposed. Each client is limited
+to 60 requests a minute across `/mcp` and `/api`; beyond that the server answers `429` with a `Retry-After` header.
 
 ## Your own repositories (local, full tools)
 
