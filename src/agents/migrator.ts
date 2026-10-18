@@ -10,8 +10,8 @@ import { hasLlm, runAgent } from './llm.js';
 const SYSTEM = `You are an Avert migrator agent. You have claimed one finding: a provider API change that reaches a call site.
 Steps: (1) call recall for the finding to reuse earlier decisions and recipes; (2) if the change names no replacement and no recipe exists,
 call sdk_params and choose the replacement param or value from the SDK docs; save it with save_recipe (from = old param name or old literal value,
-to = the new one); (3) call open_pr for the finding; if a PR is not possible, call open_issue for its batch;
-(4) call record_decision with kind 'fix' and a one-sentence reason. Only use facts from tool results. Finish with one line saying what you did.`;
+to = the new one); (3) call open_pr for the finding; if a PR is not possible, call open_issue for its batch.
+Only use facts from tool results. Finish with one line saying what you did.`;
 
 export async function migrate(repo: string, opts: { agent?: string; limit?: number; dryRun?: boolean } = {}) {
   const agent = opts.agent ?? `migrator-${process.pid}`;
@@ -49,15 +49,18 @@ export async function migrate(repo: string, opts: { agent?: string; limit?: numb
     try {
       run = await runAgent({
         // Every id the model could aim at is pinned to the claimed finding: tool results carry untrusted text (code, SDK docs, other agents' memory).
-        repo, ctx, system: SYSTEM, fixed: { finding_id: f.id, change_id: f.change.id, batch_id: await batchOf(f) }, fixedFor: { record_decision: { kind: 'fix' } },
+        repo, ctx, system: SYSTEM, fixed: { finding_id: f.id, change_id: f.change.id, batch_id: await batchOf(f) },
         task: `Finding ${f.id}\nChange: ${f.change.summary} (${f.change.source_url})\nCall site: ${f.callsite.file}:${f.callsite.line} \`${f.callsite.snippet}\`\nRoutes: ${f.routes.join(', ')}\nKnown edit: ${edit ? `${edit.from} -> ${edit.to} from ${edit.source}` : 'none'}`,
-        tools: ['recall', 'explain_path', 'sdk_params', 'save_recipe', 'open_pr', 'open_issue', 'record_decision'],
+        tools: ['recall', 'explain_path', 'sdk_params', 'save_recipe', 'open_pr', 'open_issue'],
       });
     } catch (e) {
       await setStatus(repo, f.id, 'open'); // release the claim before surfacing the failure (e.g. a rate limit)
       throw e;
     }
-    if (!run.calls.some((c) => (c.tool === 'open_pr' || c.tool === 'open_issue') && c.ok)) await setStatus(repo, f.id, 'open'); // release for another agent
+    // The decision is recorded here, not by the model, so memory says `fix` only when a PR or issue really opened.
+    const opened = run.calls.find((c) => (c.tool === 'open_pr' || c.tool === 'open_issue') && c.ok);
+    if (opened) await callTool('record_decision', { repo, finding_id: f.id, kind: 'fix', reason: `${opened.tool === 'open_pr' ? 'PR' : 'Issue'} opened by the migrator: ${run.text.slice(0, 300)}` }, ctx);
+    else await setStatus(repo, f.id, 'open'); // release for another agent
     // Share a recipe only once it produced a pull request for this finding, never on the model's say-so.
     const used = run.calls.some((c) => c.tool === 'open_pr' && c.ok) && (await plannedEdit(repo, f.id));
     if (used && used.recipe && used.source === 'recipe (repo)') await callTool('publish_recipe', { repo, recipe_id: used.recipe }, ctx);

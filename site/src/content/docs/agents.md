@@ -27,7 +27,8 @@ For each open finding, in ranked order:
    pull request. The migrator publishes the recipe to `avert:shared` only after that pull request opens. If no pull request is
    possible it opens an issue for the batch. The model's tools are pinned to the claimed finding, its change and its batch, so text
    in a tool result cannot point it at another finding.
-4. **Record** a `fix` decision. If the run fails for any reason, the claim is released (`claimed → open`) for another agent.
+4. **Record** a `fix` decision, once the pull request or issue has opened. The migrator records it, not the model, so memory never
+   says a finding was fixed when nothing was opened. If the run fails for any reason, the claim is released (`claimed → open`) for another agent.
 
 Finding status moves `open → claimed → done | declined`. Pass `--dry-run` to claim and release without acting.
 
