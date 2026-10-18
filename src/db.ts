@@ -52,6 +52,17 @@ export async function listRepoGraphs(): Promise<string[]> {
   return all.filter((g) => g.startsWith('avert:') && g !== SHARED_GRAPH);
 }
 
+/**
+ * Graphs the read-only server (hosted demo, `avert web`) may serve. AVERT_PUBLIC_GRAPHS (comma-separated) names them; without it a
+ * local run serves every repo graph, and a production run serves none, so a private graph is never public by accident.
+ */
+export async function publicGraphs(): Promise<string[]> {
+  const all = await listRepoGraphs();
+  const allow = process.env.AVERT_PUBLIC_GRAPHS?.split(',').map((g) => g.trim()).filter(Boolean);
+  if (allow) return all.filter((g) => allow.includes(g));
+  return process.env.NODE_ENV === 'production' ? [] : all;
+}
+
 export async function ensureSchema(g: Graph): Promise<void> {
   const specs: [string, string][] = [...LABELS.map((l) => [l, 'id'] as [string, string]), ...EXTRA_INDEXES];
   for (const [label, prop] of specs) {

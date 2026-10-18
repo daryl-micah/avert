@@ -2,13 +2,13 @@ import { readFile } from 'node:fs/promises';
 import { serve } from '@hono/node-server';
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js';
 import { Hono } from 'hono';
-import { listRepoGraphs } from '../db.js';
+import { publicGraphs } from '../db.js';
 import { buildServer } from '../mcp.js';
 import { explainPath, listFindings } from '../tools.js';
 import { rateLimit } from './ratelimit.js';
 
 // Hosted demo: a read-only view of the graphs (page, JSON API and MCP). No writes, no LLM calls, no GitHub actions.
-// Only graphs that exist are served, so the repo parameter cannot reach anything else.
+// Only the public graphs (AVERT_PUBLIC_GRAPHS) are served, so the repo parameter cannot reach anything else.
 
 export function buildApp(): Hono {
   const app = new Hono();
@@ -18,11 +18,11 @@ export function buildApp(): Hono {
   app.use('/mcp', limit);
   const known = async (c: { req: { query(k: string): string | undefined } }) => {
     const repo = c.req.query('repo') ?? '';
-    return (await listRepoGraphs()).includes(repo) ? repo : undefined;
+    return (await publicGraphs()).includes(repo) ? repo : undefined;
   };
 
   app.get('/', async (c) => c.html(await readFile(new URL('./index.html', import.meta.url), 'utf8')));
-  app.get('/api/repos', async (c) => c.json(await listRepoGraphs()));
+  app.get('/api/repos', async (c) => c.json(await publicGraphs()));
   app.get('/api/findings', async (c) => {
     const repo = await known(c);
     return repo ? c.json((await listFindings({ repo })).findings) : c.json({ error: 'unknown repo' }, 404);
