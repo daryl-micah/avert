@@ -7,7 +7,7 @@ Some API changes have no version to bump: a retired model id, a sunset API versi
 bots only read manifests, so they miss these. Avert indexes your code into a [FalkorDB](https://www.falkordb.com) graph, tracks
 provider changes from machine-readable sources, and joins the two with one graph query.
 
-- **Docs:** https://avert-five.vercel.app
+- **Docs:** https://avert-agent.vercel.app
 - **Live demo (read-only path view):** https://avert-demo.fly.dev
 - **Hosted MCP endpoint (read-only):** `claude mcp add --transport http avert-demo https://avert-demo.fly.dev/mcp`
 
@@ -62,13 +62,13 @@ pnpm avert blast examples/acme <change_id>
 pnpm avert web                       # path view in the browser
 ```
 
-Connect a coding agent over MCP (absolute path to your clone):
+Connect a coding agent over MCP. Avert is on npm as [`avert-mcp`](https://www.npmjs.com/package/avert-mcp), so no clone is needed:
 
 ```bash
-claude mcp add avert -e FALKORDB_URL=falkor://localhost:6380 -- npx tsx /abs/path/to/avert/src/cli.ts mcp
+claude mcp add avert -e FALKORDB_URL=falkor://localhost:6380 -- npx -y avert-mcp mcp
 ```
 
-Avert is not on npm yet, so it runs from a clone. [Cursor, the MCP Inspector and configuration](https://avert-five.vercel.app/connect/)
+[Cursor, the MCP Inspector and configuration](https://avert-agent.vercel.app/connect/)
 are in the docs.
 
 ## How it works
@@ -122,12 +122,12 @@ graph LR
 
 A change can attach at any level of the surface (`AFFECTS` on a provider, resource, operation, param or value), and it reaches
 every call site beneath it. Every label has an `id` index, with extra indexes on `ChangeEvent.kind`, `Finding.status` and
-`Value.value`. The full schema is in the [concepts page](https://avert-five.vercel.app/concepts/).
+`Value.value`. The full schema is in the [concepts page](https://avert-agent.vercel.app/concepts/).
 
 ## The queries
 
 Every Cypher query and graph algorithm call is in [`src/queries.ts`](src/queries.ts), each with its purpose and the tool that uses
-it. The [query reference](https://avert-five.vercel.app/reference/queries/) is generated from that file. The ones that carry the
+it. The [query reference](https://avert-agent.vercel.app/reference/queries/) is generated from that file. The ones that carry the
 product:
 
 **The join, downward.** From a change, down the surface hierarchy to every leaf, then to the call sites that reach it, including
@@ -181,7 +181,7 @@ FalkorDB is not optional here: these traversals are the product. With the databa
 ## MCP tools
 
 Sixteen named domain tools, not a raw Cypher box. The MCP server and the built-in agents use the same registry
-([`src/registry.ts`](src/registry.ts)); the [tool reference](https://avert-five.vercel.app/reference/mcp-tools/) is generated from it.
+([`src/registry.ts`](src/registry.ts)); the [tool reference](https://avert-agent.vercel.app/reference/mcp-tools/) is generated from it.
 
 | Area | Tools |
 |---|---|
@@ -214,7 +214,7 @@ Avert reports what it can show evidence for. It does not see dynamic dispatch or
 wrappers more than one module deep, router libraries beyond the ones listed above, or provider-default changes where your code
 leaves a parameter out. Owners come from `CODEOWNERS` team handles only. Model lifecycle data is hand-curated and only as current
 as its `retrieved` date. OpenAPI spec diffs and raw HTTP calls made without an SDK are not covered yet. See
-[Limits and roadmap](https://avert-five.vercel.app/limits/).
+[Limits and roadmap](https://avert-agent.vercel.app/limits/).
 
 ## Development
 
@@ -224,7 +224,7 @@ pnpm typecheck
 pnpm docs:gen       # regenerate the query and tool reference pages from source
 ```
 
-The repository layout is described in [Contributing](https://avert-five.vercel.app/contributing/), including how to add a provider,
+The repository layout is described in [Contributing](https://avert-agent.vercel.app/contributing/), including how to add a provider,
 lifecycle data or an extractor rule. The docs site lives in [`site/`](site) (Astro Starlight), and the hosted demo is the same
 `avert web` server, deployed with the [`Dockerfile`](Dockerfile) and [`fly.toml`](fly.toml).
 

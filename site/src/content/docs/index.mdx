@@ -103,6 +103,25 @@ shape of problem a graph database answers directly, and [FalkorDB](https://www.f
   </Card>
 </CardGrid>
 
+## Use it from your coding agent
+
+Avert is an MCP server. Install it from npm as [`avert-mcp`](https://www.npmjs.com/package/avert-mcp) and your agent gets sixteen
+named tools to find, trace, rank and fix API changes, with FalkorDB running locally:
+
+```bash
+docker run -d -p 127.0.0.1:6380:6379 falkordb/falkordb:v4.22.1
+claude mcp add avert -e FALKORDB_URL=falkor://localhost:6380 -- npx -y avert-mcp mcp
+```
+
+Then ask your agent to index a repository and tell you what the latest provider changes break. Or try the read-only hosted server
+first, with nothing to install:
+
+```bash
+claude mcp add --transport http avert-demo https://avert-demo.fly.dev/mcp
+```
+
+Cursor, the MCP Inspector and the full configuration are on the [Connect an agent](/connect/) page.
+
 ## Supported at launch
 
 | Provider | Detected from |
@@ -119,4 +138,4 @@ TypeScript. See [Limits and roadmap](/limits/) for what it cannot see.
 ## Try it
 
 - **Hosted, read-only:** `claude mcp add --transport http avert-demo https://avert-demo.fly.dev/mcp`, then ask for the findings in `avert:acme`.
-- **Locally:** follow the [Quickstart](/quickstart/).
+- **Locally:** `npx -y avert-mcp mcp` (see [Connect an agent](/connect/)), or follow the [Quickstart](/quickstart/).

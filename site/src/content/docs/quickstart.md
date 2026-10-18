@@ -3,7 +3,8 @@ title: Quickstart
 description: Index a repository, find what a provider change breaks, and connect an agent.
 ---
 
-You need Node 22+, pnpm and Docker. Avert is not on npm yet, so you run it from a clone.
+You need Node 22+, pnpm and Docker. This page works from a clone, because the demo service lives in the repository. To use Avert on
+your own code without cloning, see [Connect an agent](/connect/): it runs as `npx -y avert-mcp mcp`.
 
 ## 1. Install and start FalkorDB
 

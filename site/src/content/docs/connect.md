@@ -19,10 +19,11 @@ to 60 requests a minute across `/mcp` and `/api`; beyond that the server answers
 
 ## Your own repositories (local, full tools)
 
-Start FalkorDB first (see the [Quickstart](/quickstart/)), then register the server with an absolute path to your clone:
+Avert is on npm as [`avert-mcp`](https://www.npmjs.com/package/avert-mcp). Start FalkorDB, then register the server:
 
 ```bash
-claude mcp add avert -e FALKORDB_URL=falkor://localhost:6380 -- npx tsx /abs/path/to/avert/src/cli.ts mcp
+docker run -d -p 127.0.0.1:6380:6379 falkordb/falkordb:v4.22.1
+claude mcp add avert -e FALKORDB_URL=falkor://localhost:6380 -- npx -y avert-mcp mcp
 ```
 
 Add `--read-only` after `mcp` to hide the write tools.
@@ -36,7 +37,7 @@ Add `--read-only` after `mcp` to hide the write tools.
   "mcpServers": {
     "avert": {
       "command": "npx",
-      "args": ["tsx", "/abs/path/to/avert/src/cli.ts", "mcp"],
+      "args": ["-y", "avert-mcp", "mcp"],
       "env": { "FALKORDB_URL": "falkor://localhost:6380", "AVERT_REPO": "/abs/path/to/your/repo" }
     }
   }
@@ -46,7 +47,7 @@ Add `--read-only` after `mcp` to hide the write tools.
 ### MCP Inspector
 
 ```bash
-npx @modelcontextprotocol/inspector npx tsx /abs/path/to/avert/src/cli.ts mcp
+npx @modelcontextprotocol/inspector npx -y avert-mcp mcp
 ```
 
 ## Try the handoff between two clients
