@@ -1,6 +1,6 @@
 {
   "name": "avert-mcp",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Knows every external API your code calls, sees when a provider changes one, traces what it breaks.",
   "keywords": [
     "mcp",
