@@ -131,8 +131,9 @@ export function branchName(c: ChangeRef, all: ChangeRef[]): string {
 }
 
 /**
- * One branch and one PR per change event, covering every call site of that change. Re-running resets the
- * branch to the base, force-pushes, and updates the open PR instead of opening another.
+ * One branch and one PR per change event, covering every call site of that change. Re-running rebuilds Avert's one commit on
+ * the base and updates the open PR instead of opening another. It never replaces a commit a person pushed to the branch, and
+ * never reopens a PR someone closed.
  */
 export async function openPr(args: { repo: string; finding_id: string }) {
   const { finding, path } = await explainPath({ repo: args.repo, finding_id: args.finding_id });
@@ -146,7 +147,7 @@ export async function openPr(args: { repo: string; finding_id: string }) {
 
   // This finding first (its edit must apply), then every other call site of the same change.
   const siblings = (await listFindings({ repo: args.repo })).findings.filter((f) => f.change.id === finding.change.id && f.id !== finding.id);
-  const files = new Map<string, { sha: string; original: string; text: string }>();
+  const files = new Map<string, { original: string; text: string }>();
   const sites: string[] = [];
   for (const f of [finding, ...siblings]) {
     const e = f === finding ? edit : await plannedEdit(args.repo, f.id);
@@ -155,7 +156,7 @@ export async function openPr(args: { repo: string; finding_id: string }) {
     if (!files.has(filePath)) {
       const file = await gh('GET', `/repos/${target}/contents/${encodeURI(filePath)}?ref=${base}`);
       const original = Buffer.from(file.content, 'base64').toString('utf8');
-      files.set(filePath, { sha: file.sha, original, text: original });
+      files.set(filePath, { original, text: original });
     }
     const entry = files.get(filePath)!;
     const updated = applyEdit(entry.text, f.callsite.line, e);
@@ -165,17 +166,30 @@ export async function openPr(args: { repo: string; finding_id: string }) {
 
   const changes = (await listChanges({ repo: args.repo })).changes;
   const branch = branchName(changes.find((c) => c.id === finding.change.id) ?? { id: finding.change.id, kind: finding.kind, provider: 'provider' }, changes);
+  const prior = (await gh('GET', `/repos/${target}/pulls?head=${target.split('/')[0]}:${encodeURIComponent(branch)}&state=all`)).filter((p: any) => !p.merged_at);
+  const open = prior.find((p: any) => p.state === 'open');
+  if (!open && prior.length) throw new Error(`PR #${prior[0].number} for ${branch} was closed without merging; Avert does not reopen it or open another.`);
+
   const sha = (await gh('GET', `/repos/${target}/git/ref/heads/${base}`)).object.sha;
-  const exists = await gh('GET', `/repos/${target}/git/ref/heads/${branch}`).then(() => true, () => false);
-  if (exists) await gh('PATCH', `/repos/${target}/git/refs/heads/${branch}`, { sha, force: true });
-  else await gh('POST', `/repos/${target}/git/refs`, { ref: `refs/heads/${branch}`, sha });
-  for (const [filePath, f] of files) {
-    if (f.text === f.original) continue;
-    await gh('PUT', `/repos/${target}/contents/${encodeURI(filePath)}`, {
-      message: `fix: ${edit.from} -> ${edit.to} (${finding.change.summary})`,
-      content: Buffer.from(f.text).toString('base64'), sha: f.sha, branch,
-    });
+  const head: string | undefined = await gh('GET', `/repos/${target}/git/ref/heads/${branch}`).then((r) => r.object.sha, () => undefined);
+  if (head) {
+    // Avert's commits carry an Avert-Change trailer (earlier ones only the subject); anything else on the branch is a person's.
+    const ours = (m: string) => m.includes(`\nAvert-Change: ${finding.change.id}`) || (/^fix: .+ -> .+ \(.*\)$/.test(m) && m.endsWith(`(${finding.change.summary})`));
+    const foreign = (await gh('GET', `/repos/${target}/compare/${base}...${head}`)).commits.filter((c: any) => !ours(c.commit.message));
+    if (foreign.length) throw new Error(`${branch} has ${foreign.length} commit(s) Avert did not make; leaving the branch alone.`);
   }
+  // One commit on the base, built with the git data API so the branch never equals the base (GitHub would close the PR).
+  const baseTree = (await gh('GET', `/repos/${target}/git/commits/${sha}`)).tree.sha;
+  const modes = new Map<string, string>((await gh('GET', `/repos/${target}/git/trees/${baseTree}?recursive=1`)).tree.map((e: any) => [e.path, e.mode]));
+  const tree = await gh('POST', `/repos/${target}/git/trees`, {
+    base_tree: baseTree,
+    tree: [...files].filter(([, f]) => f.text !== f.original).map(([filePath, f]) => ({ path: filePath, mode: modes.get(filePath) ?? '100644', type: 'blob', content: f.text })),
+  });
+  const commit = await gh('POST', `/repos/${target}/git/commits`, {
+    message: `fix: ${edit.from} -> ${edit.to} (${finding.change.summary})\n\nAvert-Change: ${finding.change.id}`, tree: tree.sha, parents: [sha],
+  });
+  if (head) await gh('PATCH', `/repos/${target}/git/refs/heads/${branch}`, { sha: commit.sha, force: true });
+  else await gh('POST', `/repos/${target}/git/refs`, { ref: `refs/heads/${branch}`, sha: commit.sha });
 
   const pull = {
     title: `Avert: replace ${edit.from} with ${edit.to}`,
@@ -187,9 +201,7 @@ export async function openPr(args: { repo: string; finding_id: string }) {
       `---\n_Opened by [Avert](https://github.com/daryl-micah/avert). Nothing is merged automatically; review before merging._`,
     ].join('\n\n'),
   };
-  // Resetting the branch to the base leaves it with no diff, and GitHub closes the PR then; so look at closed PRs too and reopen.
-  const prior = (await gh('GET', `/repos/${target}/pulls?head=${target.split('/')[0]}:${encodeURIComponent(branch)}&state=all`)).find((p: any) => !p.merged_at);
-  const pr = prior ? await gh('PATCH', `/repos/${target}/pulls/${prior.number}`, { ...pull, state: 'open' }) : await gh('POST', `/repos/${target}/pulls`, { ...pull, head: branch, base });
+  const pr = open ? await gh('PATCH', `/repos/${target}/pulls/${open.number}`, pull) : await gh('POST', `/repos/${target}/pulls`, { ...pull, head: branch, base });
   await setStatus(args.repo, args.finding_id, 'done', pr.html_url);
-  return { url: pr.html_url, branch, updated: !!prior, edit, finding_id: args.finding_id, path };
+  return { url: pr.html_url, branch, updated: !!open, edit, finding_id: args.finding_id, path };
 }

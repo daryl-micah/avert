@@ -36,7 +36,9 @@ Finding status moves `open → claimed → done | declined`. Pass `--dry-run` to
 Branches are named from the change event, never the clock: `avert/<provider>/<verb>-<subject>`, for example
 `avert/stripe/remove-payment-intents-create-payment-method`. Names use `a-z`, `0-9` and `-`, are capped at 60 characters, and events
 that slugify identically get a stable 6-character hash suffix. One change is one branch and one pull request covering every call
-site. Re-running resets the branch to the base, force-pushes, and updates the existing pull request instead of opening another.
+site. Re-running rebuilds Avert's single commit on the base and updates the existing pull request instead of opening another.
+If someone pushed a commit to the branch, Avert leaves the branch alone, and it never reopens a pull request that was closed without
+merging.
 Nothing is ever merged automatically.
 
 ## What is remembered
