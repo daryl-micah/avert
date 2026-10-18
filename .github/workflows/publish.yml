@@ -1,0 +1,28 @@
+name: Publish to npm
+
+# Trusted publishing: npm trusts this workflow through OIDC, so there is no npm token in the repository.
+# Release: bump "version" in package.json, commit, then `git tag v<version> && git push --tags`.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+      - run: npm install -g pnpm@12.11.2
+      - run: pnpm install --frozen-lockfile
+      - name: Tag matches package.json
+        run: test "v$(node -p "require('./package.json').version")" = "${GITHUB_REF_NAME}"
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: npm publish
