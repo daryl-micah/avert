@@ -49,7 +49,7 @@ export async function migrate(repo: string, opts: { agent?: string; limit?: numb
     try {
       run = await runAgent({
         // Every id the model could aim at is pinned to the claimed finding: tool results carry untrusted text (code, SDK docs, other agents' memory).
-        repo, ctx, system: SYSTEM, fixed: { finding_id: f.id, change_id: f.change.id, batch_id: await batchOf(f) },
+        repo, ctx, system: SYSTEM, fixed: { finding_id: f.id, change_id: f.change.id, batch_id: await batchOf(f), kind: 'fix' },
         task: `Finding ${f.id}\nChange: ${f.change.summary} (${f.change.source_url})\nCall site: ${f.callsite.file}:${f.callsite.line} \`${f.callsite.snippet}\`\nRoutes: ${f.routes.join(', ')}\nKnown edit: ${edit ? `${edit.from} -> ${edit.to} from ${edit.source}` : 'none'}`,
         tools: ['recall', 'explain_path', 'sdk_params', 'save_recipe', 'open_pr', 'open_issue', 'record_decision'],
       });
