@@ -20,9 +20,14 @@ export interface IndexResult { graph: string; files: number; functions: number; 
 /** Clone a GitHub URL (shallow) into the cache, or return the local path. */
 export function checkout(repo: string): { root: string; url: string } {
   if (!/^https?:\/\/|^git@/.test(repo)) return { root: resolve(repo), url: resolve(repo) };
+  repo = repo.replace(/\/+$/, '');
   const dir = join(process.env.AVERT_CACHE ?? join(homedir(), '.cache', 'avert', 'repos'), graphName(repo).slice('avert:'.length));
-  if (existsSync(dir)) execFileSync('git', ['-C', dir, 'pull', '--ff-only', '-q'], { stdio: 'ignore' });
-  else execFileSync('git', ['clone', '--depth', '1', '-q', repo, dir], { stdio: 'ignore' });
+  if (existsSync(dir)) {
+    // The cache is keyed by graph name, so make sure this checkout really is the repo asked for before pulling into it.
+    const origin = execFileSync('git', ['-C', dir, 'remote', 'get-url', 'origin'], { encoding: 'utf8' }).trim();
+    if (origin.replace(/\.git$/, '') !== repo.replace(/\.git$/, '')) throw new Error(`${dir} is a checkout of ${origin}, not ${repo}; set AVERT_CACHE or remove it.`);
+    execFileSync('git', ['-C', dir, 'pull', '--ff-only', '-q'], { stdio: 'ignore' });
+  } else execFileSync('git', ['clone', '--depth', '1', '-q', repo, dir], { stdio: 'ignore' });
   return { root: dir, url: repo.replace(/\.git$/, '') };
 }
 
@@ -217,6 +222,9 @@ export async function indexRepo(repo: string): Promise<IndexResult> {
 
   // --- write
   const g = await graph(repo);
+  // Two repos can map to one graph name (same directory name, say); never mix them or let re-indexing one delete the other.
+  const [prev] = await run(g, `MATCH (r:Repo) RETURN r.url AS url LIMIT 1`);
+  if (prev && prev.url !== url) throw new Error(`${gname} already holds ${prev.url}; ${url} would overwrite it. Index it from a differently named directory.`);
   await ensureSchema(g);
   await run(g, Q.UPSERT_REPO, { id: gname, url, run: run_ });
   await writeSurface(g, rows.sites.map((s) => ({ provider: s._site.provider, resource: s._site.resource, method: s._site.method, params: s._site.args.map((a: any) => a.name) })));

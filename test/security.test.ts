@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { applyEdit } from '../src/actions/github.js';
+import { graphName } from '../src/db.js';
 import { buildApp } from '../src/web/server.js';
 
 describe('applyEdit', () => {
@@ -27,5 +28,18 @@ describe('local web server', () => {
     const app = buildApp({ localOnly: true });
     expect((await app.request('http://evil.example/api/repos', { headers: { host: 'evil.example' } })).status).toBe(403);
     expect((await app.request('http://evil.example/mcp', { method: 'POST', headers: { host: 'evil.example:8787' } })).status).toBe(403);
+  });
+});
+
+describe('graphName', () => {
+  it('keeps the whole GitHub repo name, dots included', () => {
+    expect(graphName('https://github.com/vercel/next.js')).toBe('avert:vercel__next-js');
+    expect(graphName('https://github.com/vercel/next')).toBe('avert:vercel__next');
+    expect(graphName('git@github.com:vercel/next.js.git')).toBe('avert:vercel__next-js');
+    expect(graphName('https://github.com/a/b/tree/main')).toBe('avert:a__b');
+  });
+  it('never resolves a repository to the shared recipe graph', () => {
+    expect(() => graphName('avert:shared')).toThrow(/shared/);
+    expect(() => graphName('/tmp/shared')).toThrow(/shared/);
   });
 });

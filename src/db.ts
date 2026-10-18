@@ -37,10 +37,11 @@ export async function close(): Promise<void> {
 
 /** One graph per repository: `avert:<owner>__<name>`, or `avert:<dirname>` for local paths. */
 export function graphName(repo: string): string {
-  if (repo.startsWith('avert:')) return repo;
-  const gh = repo.match(/github\.com[/:]([^/]+)\/([^/.]+)/);
+  const gh = repo.match(/github\.com[/:]([^/]+)\/([^/?#]+?)(?:\.git)?(?:[/?#]|$)/);
   const slug = gh ? `${gh[1]}__${gh[2]}` : repo.replace(/\/+$/, '').split('/').pop()!;
-  return `avert:${slug.toLowerCase().replace(/[^a-z0-9_-]/g, '-')}`;
+  const name = repo.startsWith('avert:') ? repo : `avert:${slug.toLowerCase().replace(/[^a-z0-9_-]/g, '-')}`;
+  if (name === SHARED_GRAPH) throw new Error(`${repo} names the shared recipe graph, not a repository.`);
+  return name;
 }
 
 export async function graph(repo: string): Promise<Graph> {
