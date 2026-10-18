@@ -9,7 +9,7 @@ await c.connect(new StreamableHTTPClientTransport(new URL(url)));
 
 const names = (await c.listTools()).tools.map((t) => t.name);
 console.log(`tools (${names.length}): ${names.join(', ')}`);
-const writes = ['index_repo', 'sync_changes', 'claim_finding', 'record_decision', 'save_recipe', 'publish_recipe', 'open_issue', 'open_pr', 'migration_batches'];
+const writes = ['index_repo', 'sync_changes', 'claim_finding', 'record_decision', 'save_recipe', 'publish_recipe', 'open_issue', 'open_pr', 'migration_batches', 'sdk_params'];
 const leaked = writes.filter((w) => names.includes(w));
 if (leaked.length) throw new Error(`write tools exposed: ${leaked.join(', ')}`);
 

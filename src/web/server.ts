@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { serve } from '@hono/node-server';
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js';
 import { Hono } from 'hono';
+import { bodyLimit } from 'hono/body-limit';
 import { publicGraphs } from '../db.js';
 import { buildServer } from '../mcp.js';
 import { explainPath, listFindings } from '../tools.js';
@@ -20,7 +21,7 @@ export function buildApp(opts: { localOnly?: boolean } = {}): Hono {
   const limit = rateLimit(60, 60_000); // per client per minute, shared by the API and MCP
   app.use('/api/*', limit);
   app.use('/pr', limit);
-  app.use('/mcp', limit);
+  app.use('/mcp', limit, bodyLimit({ maxSize: 64 * 1024 }));
   const known = async (c: { req: { query(k: string): string | undefined } }) => {
     const repo = c.req.query('repo') ?? '';
     return (await publicGraphs()).includes(repo) ? repo : undefined;

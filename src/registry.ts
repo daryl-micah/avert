@@ -12,7 +12,7 @@ export interface ToolDef {
   name: string;
   description: string;
   shape: z.ZodRawShape;
-  write: boolean;            // excluded in read-only mode (hosted demo)
+  write: boolean;            // excluded in read-only mode (hosted demo): writes the graph, acts on GitHub, or downloads an SDK
   run: (args: any, ctx: Ctx) => Promise<any>;
 }
 
@@ -69,7 +69,7 @@ export const TOOLS: ToolDef[] = [
 
   def('sdk_params', "Params of a finding's operation in the provider's latest SDK, with doc text and deprecation flags. Use it to choose a replacement when a change names none.", {
     finding_id: z.string(),
-  }, (a) => T.sdkParams(a)),
+  }, (a) => T.sdkParams(a), true),
 
   def('save_recipe', 'Save how a change was fixed (from -> to: a param name or literal value, with steps) so the next matching migration reuses it.', {
     change_id: z.string(), from: z.string(), to: z.string(), steps: z.string(), callsite_id: z.string().optional(),

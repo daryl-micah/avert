@@ -22,7 +22,7 @@ Tools marked **write** change the graph or call GitHub, so the hosted read-only 
 | `claim_finding` | write | Atomically claim an open finding so no other agent works on it. Fails if already claimed, naming the holder. |
 | `record_decision` | write | Remember a decision about a finding (fix, defer, wontfix, accept_risk, note) so later sessions and other agents see it. |
 | `recall` | read | Recall memory: decisions and sessions (episodic) and migration recipes (procedural, from this repo and the shared graph). With no ids, returns recent history. Call this first. |
-| `sdk_params` | read | Params of a finding's operation in the provider's latest SDK, with doc text and deprecation flags. Use it to choose a replacement when a change names none. |
+| `sdk_params` | write | Params of a finding's operation in the provider's latest SDK, with doc text and deprecation flags. Use it to choose a replacement when a change names none. |
 | `save_recipe` | write | Save how a change was fixed (from -> to: a param name or literal value, with steps) so the next matching migration reuses it. |
 | `publish_recipe` | write | Publish a repo recipe to the shared graph so other repositories hit by the same change are offered it. |
 | `open_issue` | write | Open one GitHub issue for a migration batch, with every path as evidence. |

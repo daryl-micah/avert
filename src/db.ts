@@ -77,6 +77,7 @@ export async function ensureSchema(g: Graph): Promise<void> {
 export type Row = Record<string, any>;
 
 export async function run(g: Graph, cypher: string, params: Record<string, unknown> = {}): Promise<Row[]> {
-  const res = await g.query<Row>(cypher, { params: params as any });
+  // FalkorDB applies TIMEOUT to read queries only, so this caps a runaway path or PageRank query without cutting off indexing writes.
+  const res = await g.query<Row>(cypher, { params: params as any, TIMEOUT: 15_000 });
   return res.data ?? [];
 }
