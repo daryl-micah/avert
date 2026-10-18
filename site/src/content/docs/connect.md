@@ -12,8 +12,9 @@ graph and linked to the findings it touched, so a second client can `recall` wha
 claude mcp add --transport http avert-demo https://avert-demo.fly.dev/mcp
 ```
 
-It serves two pre-indexed graphs, `avert:acme` and `avert:flutter-stripe__flutter_stripe`, with the read tools only. Pass one of
-those names as `repo`. Write tools (`index_repo`, `claim_finding`, `open_pr` and the rest) are not exposed. Each client is limited
+It serves pre-indexed graphs with the read tools only: the synthetic `avert:acme` service and `avert:flutter-stripe__flutter_stripe`,
+plus three small public Python repos with real findings (`avert:whapi-cloud__python-whatsapp-chatbot`, `avert:kentemman__messengergpt`
+and `avert:alonlavian__ragent`). Pass one of those names as `repo`. Write tools (`index_repo`, `claim_finding`, `open_pr` and the rest) are not exposed. Each client is limited
 to 60 requests a minute across `/mcp` and `/api`; beyond that the server answers `429` with a `Retry-After` header.
 
 ## Your own repositories (local, full tools)
