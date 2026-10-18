@@ -94,9 +94,14 @@ export function applyEdit(text: string, line: number, e: Edit): string | undefin
   if (!ok) throw new Error(`Refusing ${e.kind} edit ${JSON.stringify(e.from)} -> ${JSON.stringify(e.to)}: not a plain ${e.kind === 'param' ? 'identifier' : 'model id or literal'}.`);
   const lines = text.split('\n');
   if (e.kind === 'value') {
-    const re = new RegExp(`(["'\`])${e.from.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\1`, 'g');
-    const out = text.replace(re, (_m, q) => `${q}${e.to}${q}`);
-    return out === text ? undefined : out;
+    // The literal inside the call; failing that, the file's only occurrence (a module constant the call passes). Never every match.
+    const re = new RegExp(`(["'\`])${e.from.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\1`);
+    const near = lines.findIndex((l, i) => i >= line - 1 && i < line + 40 && re.test(l));
+    const hits = lines.flatMap((l, i) => (re.test(l) ? [i] : []));
+    const at = near >= 0 ? near : hits.length === 1 ? hits[0] : -1;
+    if (at < 0) return undefined;
+    lines[at] = lines[at].replace(re, (_m, q) => `${q}${e.to}${q}`);
+    return lines.join('\n');
   }
   // param: rename the key inside the call that starts at `line` (scan forward to the closing paren)
   for (let i = line - 1; i < Math.min(lines.length, line + 40); i++) {
