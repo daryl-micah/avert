@@ -83,8 +83,14 @@ export async function plannedEdit(repo: string, findingId: string): Promise<(Edi
   return undefined;
 }
 
+// Recipes can come from an LLM or the shared graph, so an edit may only write an identifier or a model-id-like literal into code.
+const PARAM = /^[A-Za-z_][A-Za-z0-9_]*$/;
+const VALUE = /^[A-Za-z0-9][A-Za-z0-9._:/@-]*$/;
+
 /** Apply an edit to file text near the call site: a quoted literal value, or a param key (`key:` / `key=`). */
 export function applyEdit(text: string, line: number, e: Edit): string | undefined {
+  const ok = e.kind === 'param' ? PARAM.test(e.from) && PARAM.test(e.to) : VALUE.test(e.to);
+  if (!ok) throw new Error(`Refusing ${e.kind} edit ${JSON.stringify(e.from)} -> ${JSON.stringify(e.to)}: not a plain ${e.kind === 'param' ? 'identifier' : 'model id or literal'}.`);
   const lines = text.split('\n');
   if (e.kind === 'value') {
     const re = new RegExp(`(["'\`])${e.from.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\1`, 'g');
@@ -95,7 +101,7 @@ export function applyEdit(text: string, line: number, e: Edit): string | undefin
   for (let i = line - 1; i < Math.min(lines.length, line + 40); i++) {
     const re = new RegExp(`(^|[\\s,{(])${e.from}(\\s*[:=])`);
     if (re.test(lines[i])) {
-      lines[i] = lines[i].replace(re, `$1${e.to}$2`);
+      lines[i] = lines[i].replace(re, (_m, pre, post) => `${pre}${e.to}${post}`);
       return lines.join('\n');
     }
   }
