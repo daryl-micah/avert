@@ -34,7 +34,7 @@ function nullableOptionals(schema: JsonSchema, hide: string[] = []): JsonSchema 
 
 export interface AgentRun { text: string; calls: { tool: string; args: unknown; ok: boolean }[] }
 
-export async function runAgent(opts: { repo: string; system: string; task: string; tools: string[]; fixed?: Record<string, string>; ctx: Ctx; maxSteps?: number; log?: (s: string) => void }): Promise<AgentRun> {
+export async function runAgent(opts: { repo: string; system: string; task: string; tools: string[]; fixed?: Record<string, string | undefined>; ctx: Ctx; maxSteps?: number; log?: (s: string) => void }): Promise<AgentRun> {
   const log = opts.log ?? ((s) => console.log(s));
   const defs = TOOLS.filter((t) => opts.tools.includes(t.name)).map((t) => ({
     type: 'function' as const,

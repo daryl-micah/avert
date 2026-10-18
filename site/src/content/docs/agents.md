@@ -23,8 +23,10 @@ For each open finding, in ranked order:
    against one repo and asserts there are no double claims.
 2. **Recall.** An earlier `wontfix`, `defer` or `accept_risk` decision means the finding is skipped and marked `declined`.
 3. **Fix.** If the change names a replacement, or a recipe covers it, it opens a pull request. Otherwise the model calls
-   `sdk_params` to read the new SDK's parameters, chooses the replacement from the docs, saves it with `save_recipe`, publishes it
-   with `publish_recipe`, and opens the pull request. If no pull request is possible it opens an issue for the batch.
+   `sdk_params` to read the new SDK's parameters, chooses the replacement from the docs, saves it with `save_recipe`, and opens the
+   pull request. The migrator publishes the recipe to `avert:shared` only after that pull request opens. If no pull request is
+   possible it opens an issue for the batch. The model's tools are pinned to the claimed finding, its change and its batch, so text
+   in a tool result cannot point it at another finding.
 4. **Record** a `fix` decision. If the run fails for any reason, the claim is released (`claimed → open`) for another agent.
 
 Finding status moves `open → claimed → done | declined`. Pass `--dry-run` to claim and release without acting.
