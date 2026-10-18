@@ -2,20 +2,43 @@
   "name": "avert-mcp",
   "version": "0.1.0",
   "description": "Knows every external API your code calls, sees when a provider changes one, traces what it breaks.",
+  "keywords": [
+    "mcp",
+    "falkordb",
+    "api-changes",
+    "deprecation",
+    "sdk",
+    "model-context-protocol"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/daryl-micah/avert.git"
+  },
+  "homepage": "https://avert-agent.vercel.app",
+  "bugs": {
+    "url": "https://github.com/daryl-micah/avert/issues"
+  },
   "license": "MIT",
   "type": "module",
   "bin": {
     "avert": "dist/cli.js"
   },
+  "files": [
+    "dist",
+    "data",
+    "README.md",
+    "LICENSE"
+  ],
   "engines": {
     "node": ">=22"
   },
   "scripts": {
     "avert": "tsx src/cli.ts",
-    "build": "tsc -p .",
+    "build": "tsc -p . && cp src/web/index.html dist/web/",
     "typecheck": "tsc -p . --noEmit",
     "test": "vitest run",
-    "docs:gen": "tsx scripts/gen-docs.ts"
+    "docs:gen": "tsx scripts/gen-docs.ts",
+    "prepack": "npm run build"
   },
   "dependencies": {
     "@hono/node-server": "^2.1.5",

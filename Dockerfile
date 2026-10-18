@@ -4,7 +4,7 @@ RUN npm install -g pnpm@12.11.2
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.json ./
 RUN pnpm install --frozen-lockfile
 COPY src ./src
-RUN pnpm build && cp src/web/index.html dist/web/
+RUN pnpm build
 
 # Runtime: compiled JS and production dependencies only, run as the unprivileged node user.
 FROM node:22-slim
