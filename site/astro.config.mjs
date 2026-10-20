@@ -1,8 +1,12 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
+import vercel from '@astrojs/vercel';
 
 export default defineConfig({
   site: 'https://avert-agent.vercel.app',
+  adapter: vercel({
+    webAnalytics: { enabled: true }
+  }),
   integrations: [
     starlight({
       title: 'Avert',
