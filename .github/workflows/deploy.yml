@@ -3,9 +3,10 @@ name: Build and deploy
 # Image goes to public GHCR (no registry secret). Azure access is OIDC federation: no stored credential.
 # One-time setup: make the ghcr.io/daryl-micah/avert package public, and set repo variables
 # AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID, AZURE_RESOURCE_GROUP, AZURE_CONTAINER_APP.
+# main deploys to AZURE_CONTAINER_APP; dev deploys to AZURE_CONTAINER_APP-dev (needs its own federated credential).
 on:
   push:
-    branches: [main]
+    branches: [main, dev]
 
 permissions:
   id-token: write
@@ -27,7 +28,7 @@ jobs:
           push: true
           tags: |
             ghcr.io/daryl-micah/avert:${{ github.sha }}
-            ghcr.io/daryl-micah/avert:latest
+            ghcr.io/daryl-micah/avert:${{ github.ref_name == 'main' && 'latest' || github.ref_name }}
       - uses: azure/login@v2
         with:
           client-id: ${{ vars.AZURE_CLIENT_ID }}
@@ -35,6 +36,6 @@ jobs:
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
       - run: >
           az containerapp update
-          --name ${{ vars.AZURE_CONTAINER_APP }}
+          --name ${{ vars.AZURE_CONTAINER_APP }}${{ github.ref_name != 'main' && '-dev' || '' }}
           --resource-group ${{ vars.AZURE_RESOURCE_GROUP }}
           --image ghcr.io/daryl-micah/avert:${{ github.sha }}
