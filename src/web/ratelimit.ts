@@ -1,14 +1,15 @@
 import type { MiddlewareHandler } from 'hono';
 
 // Fixed-window limiter, in memory, per client. The hosted demo runs one small machine, so a shared store would be overkill.
-// Behind Fly the client is `Fly-Client-IP` (set by the proxy); anywhere else every request shares one bucket.
+// Behind Azure Container Apps the ingress appends the real client address to X-Forwarded-For, so the right-most entry is the
+// trusted one (the left-most is client-supplied and spoofable). Anywhere else every request shares one bucket.
 
 export function rateLimit(limit: number, windowMs: number, now = () => Date.now()): MiddlewareHandler {
   const hits = new Map<string, { count: number; reset: number }>();
   return async (c, next) => {
     const t = now();
     for (const [k, v] of hits) if (v.reset <= t) hits.delete(k);
-    const key = c.req.header('fly-client-ip') ?? 'local';
+    const key = c.req.header('x-forwarded-for')?.split(',').at(-1)?.trim() || 'local';
     const h = hits.get(key) ?? { count: 0, reset: t + windowMs };
     hits.set(key, h);
     if (++h.count > limit) {

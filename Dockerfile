@@ -17,5 +17,5 @@ COPY data ./data
 ENV NODE_ENV=production PORT=8080 HOST=0.0.0.0
 EXPOSE 8080
 USER node
-# Read-only demo: graphs live in FalkorDB Cloud (FALKORDB_URL is a Fly secret).
+# Read-only demo: graphs live in FalkorDB Cloud (FALKORDB_URL is a Container Apps secret).
 CMD ["node", "dist/cli.js", "web"]

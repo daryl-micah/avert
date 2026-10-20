@@ -83,6 +83,8 @@ export type Row = Record<string, any>;
 
 export async function run(g: Graph, cypher: string, params: Record<string, unknown> = {}): Promise<Row[]> {
   // FalkorDB applies TIMEOUT to read queries only, so this caps a runaway path or PageRank query without cutting off indexing writes.
-  const res = await g.query<Row>(cypher, { params: params as any, TIMEOUT: 15_000 });
+  // AVERT_READ_ONLY routes through GRAPH.RO_QUERY, the only graph command the hosted web user (avert-web) is granted.
+  const exec = process.env.AVERT_READ_ONLY ? g.roQuery.bind(g) : g.query.bind(g);
+  const res = await exec<Row>(cypher, { params: params as any, TIMEOUT: 15_000 });
   return res.data ?? [];
 }
