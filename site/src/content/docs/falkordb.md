@@ -92,7 +92,7 @@ Locally, the repository's `docker-compose.yml` starts a pinned FalkorDB image bo
 docker compose up -d     # FalkorDB on localhost:6380
 ```
 
-Avert reads `FALKORDB_URL` (default `falkor://localhost:6380`). The hosted demo uses FalkorDB Cloud, passed to the Fly app as a
+Avert reads `FALKORDB_URL` (default `falkor://localhost:6380`). The hosted demo uses FalkorDB Cloud, passed to the Azure Container App as a
 secret. Use `falkors://` if the server supports TLS, because Avert warns when a password would cross the network unencrypted.
 
 The hosted server is read-only: it serves only the graphs on its allowlist (`AVERT_PUBLIC_GRAPHS`), and read queries run with a
