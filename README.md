@@ -8,8 +8,8 @@ bots only read manifests, so they miss these. Avert indexes your code into a [Fa
 provider changes from machine-readable sources, and joins the two with one graph query.
 
 - **Docs:** https://avert-agent.vercel.app
-- **Live demo (read-only path view):** https://avert-demo.fly.dev
-- **Hosted MCP endpoint (read-only):** `claude mcp add --transport http avert-demo https://avert-demo.fly.dev/mcp`
+- **Live demo (read-only path view):** https://avert-web.bravetree-b234f308.uaenorth.azurecontainerapps.io
+- **Hosted MCP endpoint (read-only):** `claude mcp add --transport http avert-demo https://avert-web.bravetree-b234f308.uaenorth.azurecontainerapps.io/mcp`
 
 ## What it finds
 
@@ -226,7 +226,7 @@ pnpm docs:gen       # regenerate the query and tool reference pages from source
 
 The repository layout is described in [Contributing](https://avert-agent.vercel.app/contributing/), including how to add a provider,
 lifecycle data or an extractor rule. The docs site lives in [`site/`](site) (Astro Starlight), and the hosted demo is the same
-`avert web` server, deployed with the [`Dockerfile`](Dockerfile) and [`fly.toml`](fly.toml).
+`avert web` server, deployed to Azure Container Apps from the [`Dockerfile`](Dockerfile) by [`deploy.yml`](.github/workflows/deploy.yml).
 
 ## Built with AI assistance
 

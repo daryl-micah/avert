@@ -75,7 +75,6 @@ new credential. Both apps share one FalkorDB Cloud free-tier instance, so load o
 
 ## Hosted demo
 
-Runs on Azure Container Apps, not Fly: `fly.toml` and the `avert-demo.fly.dev` links in the README and `site/` docs are stale and
-still to be replaced. Graphs live in FalkorDB Cloud, which has no TLS (`falkor://`) and does not allow
+Runs on Azure Container Apps (Fly is gone). The README and docs link to its `azurecontainerapps.io` URL until a custom domain is bound. Graphs live in FalkorDB Cloud, which has no TLS (`falkor://`) and does not allow
 `ACL SETUSER` from the admin user, so the read-only `avert-web` user is created in its dashboard. `PLAN.md` and `DIRECTIVE.md` are
 gitignored local planning documents; `PLAN.md` holds the milestone plan (M1 to M6).

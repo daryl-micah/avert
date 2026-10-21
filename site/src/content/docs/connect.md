@@ -9,7 +9,7 @@ graph and linked to the findings it touched, so a second client can `recall` wha
 ## The hosted demo (read-only, nothing to install)
 
 ```bash
-claude mcp add --transport http avert-demo https://avert-demo.fly.dev/mcp
+claude mcp add --transport http avert-demo https://avert-web.bravetree-b234f308.uaenorth.azurecontainerapps.io/mcp
 ```
 
 It serves pre-indexed graphs with the read tools only: the synthetic `avert:acme` service and `avert:flutter-stripe__flutter_stripe`,

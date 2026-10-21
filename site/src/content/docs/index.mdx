@@ -9,7 +9,7 @@ hero:
       link: /quickstart/
       icon: right-arrow
     - text: Live demo
-      link: https://avert-demo.fly.dev
+      link: https://avert-web.bravetree-b234f308.uaenorth.azurecontainerapps.io
       icon: external
       variant: minimal
     - text: GitHub
@@ -54,7 +54,7 @@ Route       POST /support/reply  (support/app/main.py:14)
 Team        @acme/support-ai
 ```
 
-[See this path drawn in the live demo.](https://avert-demo.fly.dev/?repo=avert:acme)
+[See this path drawn in the live demo.](https://avert-web.bravetree-b234f308.uaenorth.azurecontainerapps.io/?repo=avert:acme)
 
 ## Powered by FalkorDB
 
@@ -117,7 +117,7 @@ Then ask your agent to index a repository and tell you what the latest provider 
 first, with nothing to install:
 
 ```bash
-claude mcp add --transport http avert-demo https://avert-demo.fly.dev/mcp
+claude mcp add --transport http avert-demo https://avert-web.bravetree-b234f308.uaenorth.azurecontainerapps.io/mcp
 ```
 
 Cursor, the MCP Inspector and the full configuration are on the [Connect an agent](/connect/) page.
@@ -137,5 +137,5 @@ TypeScript. See [Limits and roadmap](/limits/) for what it cannot see.
 
 ## Try it
 
-- **Hosted, read-only:** `claude mcp add --transport http avert-demo https://avert-demo.fly.dev/mcp`, then ask for the findings in `avert:acme`.
+- **Hosted, read-only:** `claude mcp add --transport http avert-demo https://avert-web.bravetree-b234f308.uaenorth.azurecontainerapps.io/mcp`, then ask for the findings in `avert:acme`.
 - **Locally:** `npx -y avert-mcp mcp` (see [Connect an agent](/connect/)), or follow the [Quickstart](/quickstart/).
